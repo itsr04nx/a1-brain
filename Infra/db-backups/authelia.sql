@@ -91,6 +91,31 @@ INSERT INTO "authentication_logs" VALUES(78,'2026-11-01 21:03:46.486681443+00:00
 INSERT INTO "authentication_logs" VALUES(79,'2026-11-01 21:06:24.316432723+00:00',1,0,'jatin','1FA','106.192.50.65','https://cockpit.rohan.run.place/','GET');
 INSERT INTO "authentication_logs" VALUES(80,'2026-11-01 21:16:49.026737098+00:00',1,0,'admin','1FA','106.192.50.65','https://user.rohan.run.place/group-attributes','GET');
 INSERT INTO "authentication_logs" VALUES(81,'2026-11-01 21:17:47.59028571+00:00',1,0,'admin','1FA','106.192.50.65','https://user.rohan.run.place/users','GET');
+INSERT INTO "authentication_logs" VALUES(82,'2026-11-01 21:21:42.173805056+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(83,'2026-11-01 21:21:44.213693729+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(84,'2026-11-01 21:21:46.367776117+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(85,'2026-11-01 21:21:48.479718108+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(86,'2026-11-01 21:21:50.66592936+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(87,'2026-11-01 21:21:52.816426714+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(88,'2026-11-01 21:21:54.912115511+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(89,'2026-11-01 21:21:57.063040428+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(90,'2026-11-01 21:21:59.164002635+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(91,'2026-11-01 21:22:01.319134272+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(92,'2026-11-01 21:22:03.408219806+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(93,'2026-11-01 21:22:05.508687647+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(94,'2026-11-01 21:22:07.558626611+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(95,'2026-11-01 21:22:09.639069983+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(96,'2026-11-01 21:22:11.711987003+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(97,'2026-11-01 21:22:13.754351736+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(98,'2026-11-01 21:22:15.815136521+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(99,'2026-11-01 21:22:17.908305052+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(100,'2026-11-01 21:22:20.004212368+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(101,'2026-11-01 21:22:22.047618629+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(102,'2026-11-01 21:22:24.163969778+00:00',0,0,'','1FA','106.192.50.65','https://cockpit.rohan.run.place/cockpit/login','GET');
+INSERT INTO "authentication_logs" VALUES(103,'2026-11-01 21:25:06.997093736+00:00',0,0,'admin','1FA','106.192.50.65','https://mail.rohan.run.place/view/41Ho0p5fiNMMsKOvFx9SIh','GET');
+INSERT INTO "authentication_logs" VALUES(104,'2026-11-01 21:25:13.880681607+00:00',0,0,'admin','1FA','106.192.50.65','https://mail.rohan.run.place/view/41Ho0p5fiNMMsKOvFx9SIh','GET');
+INSERT INTO "authentication_logs" VALUES(105,'2026-11-01 21:25:17.99444859+00:00',1,0,'admin','1FA','106.192.50.65','https://mail.rohan.run.place/view/41Ho0p5fiNMMsKOvFx9SIh','GET');
+INSERT INTO "authentication_logs" VALUES(106,'2026-11-01 21:25:42.467783627+00:00',1,0,'admin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
 CREATE TABLE banned_ip (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -500,7 +525,7 @@ INSERT INTO "sqlite_sequence" VALUES('duo_devices',0);
 INSERT INTO "sqlite_sequence" VALUES('user_preferences',2);
 INSERT INTO "sqlite_sequence" VALUES('encryption',3);
 INSERT INTO "sqlite_sequence" VALUES('user_opaque_identifier',0);
-INSERT INTO "sqlite_sequence" VALUES('authentication_logs',81);
+INSERT INTO "sqlite_sequence" VALUES('authentication_logs',106);
 INSERT INTO "sqlite_sequence" VALUES('migrations',29);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_blacklisted_jti',0);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_consent_preconfiguration',0);

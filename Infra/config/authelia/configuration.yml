@@ -31,20 +31,52 @@ access_control:
   rules:
     - domain: auth.rohan.run.place
       policy: bypass
+
     - domain:
         - user.rohan.run.place
         - users.rohan.run.place
-        - mailpit.rohan.run.place
       policy: one_factor
       subject:
         - "group:admins"
+        - "group:lldap_admin"
+
+    - domain: mailpit.rohan.run.place
+      policy: one_factor
+      subject:
+        - "group:admins"
+        - "group:mailpit"
+        - "group:app-mailpit"
+
+    - domain: cockpit.rohan.run.place
+      policy: one_factor
+      subject:
+        - "group:admins"
+        - "group:cockpit"
+        - "group:app-cockpit"
+
+    - domain: openhands.rohan.run.place
+      policy: one_factor
+      subject:
+        - "group:admins"
+        - "group:openhands"
+        - "group:app-openhands"
+
+    - domain: opencode.rohan.run.place
+      policy: one_factor
+      subject:
+        - "group:admins"
+        - "group:opencode"
+        - "group:app-opencode"
+
     - domain:
-        - cockpit.rohan.run.place
-        - openhands.rohan.run.place
-        - opencode.rohan.run.place
         - mail.rohan.run.place
         - webmail.rohan.run.place
       policy: one_factor
+      subject:
+        - "group:admins"
+        - "group:users"
+        - "group:mail"
+        - "group:app-mail"
 
 identity_providers:
   oidc:
