@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 - Access Forbidden | Rohan Homelab</title>
+    <style>
+        :root {
+            --bg-base: #0a0e17;
+            --bg-card: rgba(17, 24, 39, 0.94);
+            --border-card: rgba(255, 255, 255, 0.08);
+            --accent-red: #ef4444;
+            --accent-red-glow: rgba(239, 68, 68, 0.15);
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --text-main: #f9fafb;
+            --text-sub: #9ca3af;
+            --text-muted: #6b7280;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-base);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(239, 68, 68, 0.12), transparent 50%),
+                radial-gradient(circle at 0% 100%, rgba(59, 130, 246, 0.08), transparent 40%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            -webkit-font-smoothing: antialiased;
+        }
+        .container {
+            width: 100%;
+            max-width: 560px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 2.25rem 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            text-align: center;
+        }
+        .icon-wrap {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--accent-red-glow);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+        .icon-wrap svg {
+            width: 32px;
+            height: 32px;
+            color: var(--accent-red);
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: var(--accent-red-glow);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #fca5a5;
+            margin-bottom: 1rem;
+        }
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+        .app-pill {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 0.85rem;
+            color: #fca5a5;
+        }
+        .info-card {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 1.15rem 1.25rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .info-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #f3f4f6;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .info-steps {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.825rem;
+            color: var(--text-sub);
+        }
+        .info-steps li {
+            position: relative;
+            padding-left: 1.25rem;
+            line-height: 1.4;
+        }
+        .info-steps li::before {
+            content: "•";
+            position: absolute;
+            left: 0.25rem;
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 10px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-hover));
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #60a5fa, var(--accent-blue));
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: var(--text-main);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+        .footer {
+            border-top: 1px solid var(--border-card);
+            padding-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .footer a {
+            color: #93c5fd;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .copy-link {
+            cursor: pointer;
+            color: var(--text-sub);
+            border: none;
+            background: none;
+            font-size: 0.75rem;
+            text-decoration: underline;
+        }
+        .copy-link:hover {
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon-wrap">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+        </div>
+
+        <div>
+            <span class="badge">
+                <span class="badge-dot"></span>
+                403 &bull; Access Forbidden
+            </span>
+        </div>
+
+        <h1>Access Restricted</h1>
+        <p class="subtitle">
+            You are signed in, but your account or LDAP group does not have permission to access <span class="app-pill" id="target-app">this application</span>.
+        </p>
+
+        <div class="info-card">
+            <div class="info-title">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                Role-Based Access Control (RBAC)
+            </div>
+            <ul class="info-steps">
+                <li>Access to homelab applications is controlled by group membership and the <code>app-access</code> attribute in LLDAP.</li>
+                <li>If you recently requested access, changes take effect on your next session refresh.</li>
+                <li>If you are signed into the wrong account, click <strong>Switch Account</strong> below.</li>
+            </ul>
+        </div>
+
+        <div class="actions">
+            <a class="btn btn-primary" href="https://user.rohan.run.place/">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                Open LLDAP Directory Portal
+            </a>
+            <a class="btn btn-secondary" href="https://auth.rohan.run.place/logout">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                Switch Account / Sign Out
+            </a>
+            <a class="btn btn-secondary" id="request-access-btn" href="#">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                Request Access via Email
+            </a>
+        </div>
+
+        <div class="footer">
+            <span>Admin: <a href="mailto:admin@rohan.run.place">admin@rohan.run.place</a></span>
+            <button class="copy-link" onclick="copyDiagnostics()">Copy Diagnostics</button>
+        </div>
+    </div>
+
+    <script>
+        const appMap = {
+            'auth.rohan.run.place': 'Authelia SSO Portal',
+            'user.rohan.run.place': 'LLDAP Directory Portal',
+            'users.rohan.run.place': 'LLDAP Directory Portal',
+            'mail.rohan.run.place': 'SnappyMail Webmail',
+            'webmail.rohan.run.place': 'SnappyMail Webmail',
+            'mailpit.rohan.run.place': 'Mailpit Test Inbox',
+            'openhands.rohan.run.place': 'OpenHands AI Workspace',
+            'opencode.rohan.run.place': 'OpenCode IDE Workspace',
+            'cockpit.rohan.run.place': 'Cockpit Host Console'
+        };
+
+        const currentHost = window.location.hostname;
+        const currentUrl = window.location.href;
+        const friendlyName = appMap[currentHost] || currentHost;
+        document.getElementById('target-app').innerText = friendlyName;
+
+        const subject = encodeURIComponent('Access Request for ' + friendlyName);
+        const body = encodeURIComponent(
+            'Hello Administrator,\n\n' +
+            'Please grant my account/group access to ' + friendlyName + ' (' + currentUrl + ').\n\n' +
+            'Current User: (Please specify your username)\n' +
+            'Timestamp: ' + new Date().toISOString() + '\n'
+        );
+        document.getElementById('request-access-btn').href = 'mailto:admin@rohan.run.place?subject=' + subject + '&body=' + body;
+
+        function copyDiagnostics() {
+            const diag = {
+                timestamp: new Date().toISOString(),
+                status: 403,
+                error: 'Forbidden / Insufficient Group Permissions',
+                application: friendlyName,
+                host: currentHost,
+                url: currentUrl,
+                userAgent: navigator.userAgent
+            };
+            navigator.clipboard.writeText(JSON.stringify(diag, null, 2)).then(() => {
+                alert('Diagnostic info copied to clipboard!');
+            }).catch(() => {
+                prompt('Copy diagnostic details:', JSON.stringify(diag));
+            });
+        }
+    </script>
+</body>
+</html>
