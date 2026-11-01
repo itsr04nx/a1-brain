@@ -128,6 +128,12 @@ INSERT INTO "authentication_logs" VALUES(115,'2026-11-01 21:44:05.699799534+00:0
 INSERT INTO "authentication_logs" VALUES(116,'2026-11-01 21:44:17.419485104+00:00',1,0,'admin','1FA','106.192.50.65','https://user.rohan.run.place/groups','GET');
 INSERT INTO "authentication_logs" VALUES(117,'2026-11-01 21:47:11.517964107+00:00',0,0,'jatin','1FA','172.18.0.1','','');
 INSERT INTO "authentication_logs" VALUES(118,'2026-11-01 21:47:20.468477205+00:00',1,0,'admin','1FA','172.18.0.1','','');
+INSERT INTO "authentication_logs" VALUES(119,'2026-11-01 21:48:33.620997389+00:00',1,0,'jatin','1FA','106.192.50.65','','');
+INSERT INTO "authentication_logs" VALUES(120,'2026-11-01 21:50:56.489360533+00:00',1,0,'jatin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
+INSERT INTO "authentication_logs" VALUES(121,'2026-11-01 21:54:52.87308917+00:00',1,0,'admin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
+INSERT INTO "authentication_logs" VALUES(122,'2026-11-01 21:59:32.931648999+00:00',0,0,'jatin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
+INSERT INTO "authentication_logs" VALUES(123,'2026-11-01 21:59:38.520391371+00:00',1,0,'jatin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
+INSERT INTO "authentication_logs" VALUES(124,'2026-11-01 22:00:45.734537512+00:00',1,0,'jatin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
 CREATE TABLE banned_ip (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -460,6 +466,7 @@ CREATE TABLE user_preferences (
     second_factor_method VARCHAR(11) NOT NULL
 );
 INSERT INTO "user_preferences" VALUES(2,'admin','totp');
+INSERT INTO "user_preferences" VALUES(4,'jatin','totp');
 CREATE TABLE webauthn_credentials (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -534,10 +541,10 @@ DELETE FROM "sqlite_sequence";
 INSERT INTO "sqlite_sequence" VALUES('identity_verification',2);
 INSERT INTO "sqlite_sequence" VALUES('totp_configurations',0);
 INSERT INTO "sqlite_sequence" VALUES('duo_devices',0);
-INSERT INTO "sqlite_sequence" VALUES('user_preferences',2);
+INSERT INTO "sqlite_sequence" VALUES('user_preferences',4);
 INSERT INTO "sqlite_sequence" VALUES('encryption',3);
 INSERT INTO "sqlite_sequence" VALUES('user_opaque_identifier',0);
-INSERT INTO "sqlite_sequence" VALUES('authentication_logs',118);
+INSERT INTO "sqlite_sequence" VALUES('authentication_logs',124);
 INSERT INTO "sqlite_sequence" VALUES('migrations',29);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_blacklisted_jti',0);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_consent_preconfiguration',0);
