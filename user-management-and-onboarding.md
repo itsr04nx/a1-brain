@@ -2,7 +2,7 @@
 
 ## 1. Unified Architecture
 
-All users, mailboxes, and single sign-on access across `rohan.run.place` are unified under **LLDAP** as the single source of truth.
+All users, mailboxes, single sign-on access, and profile avatars across rohan.run.place are unified under **LLDAP** as the single source of truth.
 
 ```
        [LLDAP Interactive Web Dashboard]
@@ -17,85 +17,66 @@ All users, mailboxes, and single sign-on access across `rohan.run.place` are uni
        │                           │                           │
        ├─ Cockpit Monitoring       ├─ Isolated /var/mail       ├─ Push Notifications (IMAP IDLE)
        ├─ OpenHands AI             ├─ IMAPS Port 993           ├─ Rich-Text Compose & Reply
-       ├─ OpenCode Tailnet         └─ SMTPS Port 587           └─ Private User Inboxes
-       └─ User Management Admin
+       ├─ OpenCode Web             └─ SMTPS Port 465           ├─ LLDAP Contact Avatars
+       └─ Self-Service Directory                               └─ Private User Inboxes
 ```
 
 ---
 
-## 2. Interactive User Management Portal
+## 2. User Directory & Self-Service Portal
 
-- **URL**: [`https://user.rohan.run.place`](https://user.rohan.run.place) (also [`https://users.rohan.run.place`](https://users.rohan.run.place))
-- **Access Rule**: Restricted to users in group `admins` (or client certificate).
+- **URL**: [https://user.rohan.run.place](https://user.rohan.run.place) (also [https://users.rohan.run.place](https://users.rohan.run.place))
+- **Access Rule**: Accessible to **all authenticated users** via Authelia SSO.
+- **Role Separation**:
+  - **Standard Users**: Can view their own profile, edit personal details (display name, email, avatar photo), and change their own account password.
+  - **Administrators (`lldap_admin` / `admins`)**: Have full access to create users, edit groups, delete accounts, and manage permissions.
 - **Default Bootstrap Admin Credentials**:
   - **Username**: `admin`
   - **Password**: `admin12345`
 
 ### How to Onboard a New User:
-1. Open [`https://user.rohan.run.place`](https://user.rohan.run.place) and log in.
-2. Click **"Users" \(\rightarrow\) "+ Add User"**.
+1. Open [https://user.rohan.run.place](https://user.rohan.run.place) and log in.
+2. Click **"Users" → "+ Add User"**.
 3. Enter:
    - **User ID**: e.g., `alice`
    - **Email**: `alice@rohan.run.place`
    - **Display Name**: `Alice Smith`
-   - **Password**: Set a secure password.
+   - **Password**: Set an initial password.
 4. Click **"Groups"** and add `alice` to:
-   - `users` (standard access to Cockpit, OpenHands, OpenCode, and Webmail).
+   - `mail` (access to Webmail).
+   - `ai-dev-core` (access to OpenHands and OpenCode).
    - `admins` (only if full administrative rights and user management access are required).
-5. **Done!** The moment the user is created in LLDAP:
-   - They can log into **Authelia SSO** with their username & password.
-   - Their private mailbox (`alice@rohan.run.place`) is active.
-   - They can log into Webmail at [`https://mail.rohan.run.place`](https://mail.rohan.run.place) or Thunderbird on Android.
+5. **Automated Onboarding Trigger:**
+   The `homelab-onboarding.service` systemd daemon automatically:
+   - Pre-creates SnappyMail storage directory `/var/lib/snappymail/...` with permissions `82:82` and `770`.
+   - Delivers a welcome email to `alice@rohan.run.place` from `onboarding@rohan.run.place` with SSO instructions, portal links, and password self-service directions.
+   - Synchronizes any uploaded avatar photo across SnappyMail and Nginx.
 
 ---
 
-## 3. Automated Onboarding Verification Checklist
+## 3. Automated Onboarding Daemon
 
-To verify that all services, mailboxes, and permissions are operational for any user, run:
+- **Service Unit**: `homelab-onboarding.service` (`/etc/systemd/system/homelab-onboarding.service`)
+- **Daemon Binary**: `/usr/local/bin/homelab-onboarding-daemon --daemon`
+- **Manual Trigger**: `/usr/local/bin/homelab-send-welcome <username>` or `homelab-onboarding-daemon --check-all`
+- **State Storage**: `/home/ubuntu/Workspace/authelia/data/onboarding/welcomed_users.json`
 
-```bash
-homelab-user-audit <username>
-```
-*(or alias `onboard-verify <username>`)*
+---
 
-### Checklist Output Example:
-```
-====================================================================
-       HOMELAB UNIFIED USER ONBOARDING & AUDIT CHECKLIST
-====================================================================
-Target User: alice
---------------------------------------------------------------------
-[✓] 1. LLDAP Directory Identity:
-    - Username: alice
-    - Display Name: Alice Smith
-    - Primary Email: alice@rohan.run.place
-    - Groups Assigned: ['users']
+## 4. Avatar Synchronization
 
-[✓] 2. Authelia Single Sign-On (SSO):
-    - SSO Provider: https://auth.rohan.run.place
-    - Directory Sync: Instant (LDAP Backend active)
-    - Role Category: STANDARD USER
+- **Sync Binary**: `/usr/local/bin/homelab-sync-avatars`
+- **How it Works**:
+  1. Reads `avatar` binary `jpegPhoto` records from LLDAP SQLite database (`users.db`).
+  2. Extracts the image data and generates:
+     - SnappyMail avatars: `/home/ubuntu/Workspace/authelia/data/snappymail/_data_/_default_/avatars/{email}.jpeg` and `{sha1}.jpeg`.
+     - Nginx public endpoints: `/home/ubuntu/Workspace/authelia/nginx/avatars/{username}.jpg` and `{email}.jpg`.
+  3. Integrated directly into the onboarding daemon loop for continuous synchronization.
 
-[✓] 3. Mailbox & Email Engine (Docker-Mailserver):
-    - Mailbox Address: alice@rohan.run.place
-    - IMAPS Endpoint: 100.72.142.64:993 (SSL/TLS)
-    - SMTPS Endpoint: 100.72.142.64:587 (STARTTLS)
-    - IMAP IDLE Push: Supported (Thunderbird mobile ready)
-    - Mailbox Storage: Isolated (/var/mail/rohan.run.place/alice)
+---
 
-[✓] 4. Multi-User Webmail (SnappyMail):
-    - Webmail Portal: https://mail.rohan.run.place
-    - Compose & Reply: Enabled
-    - Mailbox Separation: Active (User sees only their own emails)
+## 5. Host & Cockpit Administration Credentials
 
-[✓] 5. Application Access Entitlements:
-    - Cockpit (Host Monitoring):       ALLOWED
-    - OpenHands (AI Dev Agent):        ALLOWED
-    - OpenCode (Editor Serve):         ALLOWED
-    - Webmail Inbox:                   ALLOWED
-    - User Admin (user.rohan.run.place):   DENIED (Restricted to Admins)
-    - Developer Mailpit:               DENIED (Restricted to Admins)
-====================================================================
-OVERALL STATUS: 100% ONBOARDED & OPERATIONAL
-====================================================================
-```
+- **Cockpit URL**: [https://cockpit.rohan.run.place](https://cockpit.rohan.run.place) (or `https://100.72.142.64:9091` over Tailscale)
+- **Allowed Users**: `ubuntu`, `root` (removed from `disallowed-users`)
+- **Credentials**: Both `ubuntu` and `root` are synchronized to use the root password hash in `/etc/shadow`.

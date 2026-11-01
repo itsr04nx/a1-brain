@@ -1,184 +1,79 @@
-# Email & SMTP Integration Guide
+# Email, SMTP & Webmail Guide
 
 ## 1. Overview & Architecture
 
-The homelab runs an internal, zero-friction mailing solution designed to capture, display, and manage notifications, alerts, and system emails from all applications and servers across the Tailnet.
+The homelab provides a private, multi-user email and webmail solution integrated directly with LLDAP and Authelia SSO.
 
 ```
-       [Any Application / Service / Script]
-    (OpenHands, Authelia, Cockpit, Cron, Python)
-                         │
-                         ▼ (SMTP: Port 1025, No Auth, Plaintext)
-                 ┌───────────────┐
-                 │    Mailpit    │ (SMTP Engine & SQLite Storage)
-                 └───────┬───────┘
-                         │
-                         ▼
-             [Live Web Inbox & Webmail]
-  ┌──────────────────────────────────────────────┐
-  │  https://mail.rohan.run.place                │ (Instant Web Inbox)
-  │  https://webmail.rohan.run.place             │ (SnappyMail Webmail Client)
-  └──────────────────────────────────────────────┘
-                         │
-        (Protected by Authelia SSO & Client Certs)
-```
-
----
-
-## 2. Credentials & Access
-
-### A. Mailpit Web Inbox (`https://mail.rohan.run.place`)
-- **Access**: Protected by Authelia SSO.
-- **Login**: Use your Authelia credentials (`admin` / `admin`) or a valid TLS Client Certificate.
-- **Separate Mail Password**: **None needed!** Once authenticated via SSO, you have full real-time access to the entire inbox for `admin@rohan.run.place` and all custom addresses.
-
-### B. SnappyMail Webmail (`https://webmail.rohan.run.place`)
-- **Nature**: SnappyMail is a webmail **client** (like web-based Outlook/Thunderbird) that connects to an external or local IMAP server.
-- **Admin Panel URL**: `https://webmail.rohan.run.place/?admin`
-- **Admin Username**: `admin`
-- **Admin Password**: `ve8sLExbjq/u` (Stored on `a1` at `/home/ubuntu/Workspace/authelia/data/snappymail/_default_/admin_password.txt`).
-- **User Webmail Login**: SnappyMail passes login credentials directly to an IMAP server (default `localhost:143`). To use SnappyMail for user login, link it via the admin panel to an IMAP server (e.g. Gmail App Password, Fastmail, or a custom IMAP provider). For simple homelab notifications, **Mailpit** at `https://mail.rohan.run.place` is the recommended live inbox.
-
----
-
-## 3. Custom Email Addresses
-
-The system accepts emails for any recipient and from any sender without requiring you to manually create mail accounts beforehand.
-
-### Standard Homelab Addresses
-- `admin@rohan.run.place` — Primary administrator mailbox
-- `alerts@rohan.run.place` — Homelab monitor and infrastructure alerts
-- `openhands@rohan.run.place` — OpenHands AI coding agent notifications
-- `authelia@rohan.run.place` — Authelia authentication, 2FA codes, and password reset tokens
-- `cockpit@rohan.run.place` — Server monitoring and host status alerts from Cockpit/PCP
-- `cron@rohan.run.place` — Scheduled task, backup, and cron job reports
-- `*@rohan.run.place` — Any custom address automatically routes into the Mailpit inbox
-
----
-
-## 4. SMTP Connection Parameters
-
-All applications can connect to the SMTP server without authentication and without encryption overhead:
-
-| Parameter | Host `a1` Services | Docker Containers on `a1` | Tailscale Hosts (`micro-1`, `micro-2`, laptop) |
-| :--- | :--- | :--- | :--- |
-| **SMTP Host** | `127.0.0.1` | `172.17.0.1` or `mailpit` | `100.72.142.64` |
-| **SMTP Port** | `1025` | `1025` | `1025` |
-| **Authentication** | None (Disabled) | None (Disabled) | None (Disabled) |
-| **Username** | *(leave blank)* | *(leave blank)* | *(leave blank)* |
-| **Password** | *(leave blank)* | *(leave blank)* | *(leave blank)* |
-| **Encryption/TLS** | Plaintext (No TLS / SSL) | Plaintext (No TLS / SSL) | Plaintext (No TLS / SSL) |
-| **Allowed Senders** | Any `*@rohan.run.place` | Any `*@rohan.run.place` | Any `*@rohan.run.place` |
-
----
-
-## 5. Application Configuration Examples
-
-### 1. Authelia (Identity & SSO)
-Configured in `/home/ubuntu/Workspace/authelia/config/configuration.yml`:
-```yaml
-notifier:
-  disable_startup_check: true
-  smtp:
-    address: "smtp://mailpit:1025"
-    sender: "Authelia <admin@rohan.run.place>"
-    subject: "[Authelia] {title}"
-    disable_require_tls: true
-```
-
-### 2. OpenHands AI Coding Agent
-Configure in your environment or OpenHands settings:
-```env
-SMTP_HOST=172.17.0.1
-SMTP_PORT=1025
-SMTP_USER=
-SMTP_PASSWORD=
-SMTP_SECURE=false
-SMTP_FROM=openhands@rohan.run.place
-```
-
-### 3. Cockpit & System Alerts (`msmtp`)
-To enable system-wide `mail` commands and Cockpit cron notifications, configure `/etc/msmtprc`:
-```ini
-defaults
-auth off
-tls off
-
-account default
-host 127.0.0.1
-port 1025
-from alerts@rohan.run.place
-```
-Test with:
-```bash
-echo "Test alert from Cockpit" | mail -s "System Status" admin@rohan.run.place
-```
-
-### 4. Bash / Shell Scripts (cURL)
-Send a notification in one line without installing any email packages:
-```bash
-curl --url 'smtp://100.72.142.64:1025' \
-  --mail-from 'backup@rohan.run.place' \
-  --mail-rcpt 'admin@rohan.run.place' \
-  -T - << 'EOF'
-From: "Backup Job" <backup@rohan.run.place>
-To: <admin@rohan.run.place>
-Subject: Backup Completed Successfully
-
-Nightly snapshot completed.
-EOF
-```
-
-### 5. Python Applications (`smtplib`)
-```python
-import smtplib
-from email.message import EmailMessage
-
-msg = EmailMessage()
-msg.set_content("OpenHands completed the task successfully.")
-msg["Subject"] = "Task Notification: OpenHands"
-msg["From"] = "openhands@rohan.run.place"
-msg["To"] = "admin@rohan.run.place"
-
-with smtplib.SMTP("100.72.142.64", 1025) as server:
-    server.send_message(msg)
-```
-
-### 6. Node.js Applications (`nodemailer`)
-```javascript
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  host: "100.72.142.64",
-  port: 1025,
-  secure: false,
-  tls: { rejectUnauthorized: false }
-});
-
-await transporter.sendMail({
-  from: '"App Alert" <alerts@rohan.run.place>',
-  to: "admin@rohan.run.place",
-  subject: "Homelab Event Triggered",
-  text: "Service healthcheck passed."
-});
+       [External Clients / Thunderbird]
+          (Connecting via Tailscale)
+               │                 │
+               ▼                 ▼
+          IMAPS (993)       SMTPS (465)
+               │                 │
+       ┌───────┴─────────────────┴───────┐
+       │   Docker-Mailserver (a1)        │
+       │   - Dovecot (IMAP Storage)      │
+       │   - Postfix (SMTP Routing)      │
+       │   - Fail2ban (Active Defense)   │
+       │   - Guardrail Recipient Check   │
+       └───────────────┬─────────────────┘
+                       │
+                       ▼ (Internal Docker Network)
+       [SnappyMail Multi-User Webmail]
+          https://mail.rohan.run.place
+          (Protected by Authelia SSO & TLS 1.3)
 ```
 
 ---
 
-## 6. Optional: Forwarding to Real External Emails (Gmail, etc.)
+## 2. Enterprise Zero-Trust Network Posture
 
-If you want notifications to also be forwarded out to your personal external email (e.g. `yourname@gmail.com`), configure an outbound SMTP relay in `/home/ubuntu/Workspace/authelia/docker-compose.yml` under `mailpit`:
+To protect against public internet brute-force attacks, port scanners, and spambots:
+- **Public Internet Exposure (0.0.0.0/0):**
+  - **80/tcp** (HTTP redirect to HTTPS)
+  - **443/tcp** (HTTPS reverse proxy for Webmail and Authelia SSO)
+  - **All raw mail ports (25, 465, 587, 993) are FILTERED and dropped by OCI cloud firewall.**
+- **Tailscale Encrypted Access (100.64.0.0/10):**
+  - **993/tcp** (IMAPS) & **465/tcp** (SMTPS) are accessible exclusively over Tailscale.
+  - Fail2ban is active on the host with jails for `dovecot`, `postfix`, and `custom` to ban malicious authentication attempts.
 
-```yaml
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: mailpit
-    environment:
-      - MP_DATA_FILE=/data/mailpit.db
-      - MP_SMTP_BIND_ADDR=0.0.0.0:1025
-      - MP_UI_BIND_ADDR=0.0.0.0:8025
-      # Outbound relay configuration (e.g. Brevo, SendGrid, Amazon SES, or Gmail App Password)
-      - MP_SMTP_RELAY_CONFIG=/data/relay.yaml
-```
+---
 
-When enabled, Mailpit stores the message in the web inbox AND forwards a copy to external inboxes automatically.
+## 3. Thunderbird Autoconfiguration
+
+Thunderbird automatically discovers server settings using standard autoconfig protocols:
+- `http://autoconfig.rohan.run.place/mail/config-v1.1.xml`
+- `https://mail.rohan.run.place/.well-known/autoconfig/mail/config-v1.1.xml`
+- `http://autodiscover.rohan.run.place/autodiscover/autodiscover.xml`
+
+When setting up your account in Thunderbird over Tailscale:
+- **Incoming (IMAP):** `mail.rohan.run.place` on port **993** (SSL/TLS, Normal Password)
+- **Outgoing (SMTP):** `mail.rohan.run.place` on port **465** (SSL/TLS, Normal Password)
+
+---
+
+## 4. Mail Guardrails & Outbound Delivery
+
+### Recipient Verification Guardrail
+- Configured in `/home/ubuntu/Workspace/authelia/data/dms/config/postfix-main.cf`:
+  ```ini
+  smtpd_recipient_restrictions = reject_non_fqdn_recipient, reject_unknown_recipient_domain, reject_unlisted_recipient, permit_sasl_authenticated, permit_mynetworks, reject_unauth_destination
+  ```
+- **Effect:** During the SMTP `RCPT TO` handshake, Postfix queries LLDAP. If an address (e.g. `somerandomdude@rohan.run.place`) does not exist, the client is immediately rejected with:
+  `550 5.1.1 <...>: Recipient address rejected: User unknown in virtual mailbox table`.
+
+### Outbound Internet Mail (Gmail, etc.)
+- **Oracle Cloud Restriction:** OCI blocks outbound TCP port 25 across all compute tenancies. Direct delivery to foreign MX servers on port 25 will time out.
+- **Solution:** Outbound external email must be routed via an authenticated SMTP relay on port 587 (e.g., Brevo, SendGrid, Amazon SES, or Gmail App Password via `RELAY_HOST` in docker-mailserver).
+
+---
+
+## 5. Webmail & Avatars (SnappyMail)
+
+- **Webmail URL**: [https://mail.rohan.run.place](https://mail.rohan.run.place) (also [https://webmail.rohan.run.place](https://webmail.rohan.run.place))
+- **SSO Integration**: Protected by Authelia SSO. Users log in with their LLDAP credentials.
+- **Avatars Plugin**: Enabled in `application.ini` (`enabled_list = "avatars"`).
+- **Avatar Storage**: Synchronized by `homelab-sync-avatars` from LLDAP into:
+  - `/home/ubuntu/Workspace/authelia/data/snappymail/_data_/_default_/avatars/{email}.jpeg`
+  - `/home/ubuntu/Workspace/authelia/data/snappymail/_data_/_default_/avatars/{sha1}.jpeg`
