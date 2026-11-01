@@ -16,11 +16,20 @@ storage:
 
 authentication_backend:
   ldap:
-    implementation: "lldap"
+    implementation: "custom"
     address: "ldap://lldap:3890"
     base_dn: "dc=rohan,dc=run,dc=place"
     user: "uid=admin,ou=people,dc=rohan,dc=run,dc=place"
     password: "admin12345"
+    additional_users_dn: "ou=people"
+    users_filter: "(&({username_attribute}={input})(|(objectClass=person)(objectClass=inetOrgPerson)))"
+    additional_groups_dn: "ou=groups"
+    groups_filter: "(|(member={dn})(uniqueMember={dn}))"
+    attributes:
+      username: "uid"
+      display_name: "displayName"
+      mail: "mail"
+      group_name: "app-access"
 
 identity_validation:
   reset_password:
@@ -37,46 +46,46 @@ access_control:
         - users.rohan.run.place
       policy: one_factor
       subject:
-        - "group:admins"
-        - "group:lldap_admin"
+        - "group:user-admin"
+        - "group:admin"
+        - "group:all"
 
     - domain: mailpit.rohan.run.place
       policy: one_factor
       subject:
-        - "group:admins"
         - "group:mailpit"
-        - "group:app-mailpit"
+        - "group:admin"
+        - "group:all"
 
     - domain: cockpit.rohan.run.place
       policy: one_factor
       subject:
-        - "group:admins"
         - "group:cockpit"
-        - "group:app-cockpit"
+        - "group:admin"
+        - "group:all"
 
     - domain: openhands.rohan.run.place
       policy: one_factor
       subject:
-        - "group:admins"
         - "group:openhands"
-        - "group:app-openhands"
+        - "group:admin"
+        - "group:all"
 
     - domain: opencode.rohan.run.place
       policy: one_factor
       subject:
-        - "group:admins"
         - "group:opencode"
-        - "group:app-opencode"
+        - "group:admin"
+        - "group:all"
 
     - domain:
         - mail.rohan.run.place
         - webmail.rohan.run.place
       policy: one_factor
       subject:
-        - "group:admins"
-        - "group:users"
         - "group:mail"
-        - "group:app-mail"
+        - "group:admin"
+        - "group:all"
 
 identity_providers:
   oidc:
