@@ -75,6 +75,15 @@ def audit_user(username):
     for gid in user_group_ids:
         grp = all_groups.get(gid)
         if grp:
+            gname = grp.get('displayName', '')
+            if gname in ['admins', 'lldap_admin']:
+                granted_apps.add('all')
+            elif gname == 'ai-dev-core':
+                granted_apps.update(['openhands', 'opencode', 'mail'])
+            elif gname in ['mail', 'mail-all']:
+                granted_apps.add('mail')
+            else:
+                granted_apps.add(gname)
             for attr in grp.get("attributes", []):
                 if attr["name"] == "app-access":
                     granted_apps.update(attr.get("value", []))

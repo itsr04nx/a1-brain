@@ -10,7 +10,7 @@ services:
       - SQLITE3_DATABASE=/config/authelia.db
       - JWT_SECRET=change-this-to-a-very-long-random-string
       - COOKIE_SAME_SITE=lax
-      - LOG_LEVEL=info
+      - LOG_LEVEL=debug
     volumes:
       - ./config:/config
       - ./data:/data

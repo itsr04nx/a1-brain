@@ -134,6 +134,8 @@ INSERT INTO "authentication_logs" VALUES(121,'2026-11-01 21:54:52.87308917+00:00
 INSERT INTO "authentication_logs" VALUES(122,'2026-11-01 21:59:32.931648999+00:00',0,0,'jatin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
 INSERT INTO "authentication_logs" VALUES(123,'2026-11-01 21:59:38.520391371+00:00',1,0,'jatin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
 INSERT INTO "authentication_logs" VALUES(124,'2026-11-01 22:00:45.734537512+00:00',1,0,'jatin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
+INSERT INTO "authentication_logs" VALUES(125,'2026-11-01 22:18:09.224101537+00:00',1,0,'rohan','1FA','106.192.50.65','','');
+INSERT INTO "authentication_logs" VALUES(126,'2026-11-01 22:19:38.798970813+00:00',1,0,'rohan','1FA','106.192.50.65','','');
 CREATE TABLE banned_ip (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -467,6 +469,7 @@ CREATE TABLE user_preferences (
 );
 INSERT INTO "user_preferences" VALUES(2,'admin','totp');
 INSERT INTO "user_preferences" VALUES(4,'jatin','totp');
+INSERT INTO "user_preferences" VALUES(6,'rohan','totp');
 CREATE TABLE webauthn_credentials (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -541,10 +544,10 @@ DELETE FROM "sqlite_sequence";
 INSERT INTO "sqlite_sequence" VALUES('identity_verification',2);
 INSERT INTO "sqlite_sequence" VALUES('totp_configurations',0);
 INSERT INTO "sqlite_sequence" VALUES('duo_devices',0);
-INSERT INTO "sqlite_sequence" VALUES('user_preferences',4);
+INSERT INTO "sqlite_sequence" VALUES('user_preferences',6);
 INSERT INTO "sqlite_sequence" VALUES('encryption',3);
 INSERT INTO "sqlite_sequence" VALUES('user_opaque_identifier',0);
-INSERT INTO "sqlite_sequence" VALUES('authentication_logs',124);
+INSERT INTO "sqlite_sequence" VALUES('authentication_logs',126);
 INSERT INTO "sqlite_sequence" VALUES('migrations',29);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_blacklisted_jti',0);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_consent_preconfiguration',0);

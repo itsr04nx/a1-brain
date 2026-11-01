@@ -29,7 +29,7 @@ authentication_backend:
       username: "uid"
       display_name: "displayName"
       mail: "mail"
-      group_name: "app-access"
+      group_name: "cn"
 
 identity_validation:
   reset_password:
@@ -46,46 +46,46 @@ access_control:
         - users.rohan.run.place
       policy: one_factor
       subject:
+        - "group:admins"
+        - "group:lldap_admin"
         - "group:user-admin"
-        - "group:admin"
-        - "group:all"
 
     - domain: mailpit.rohan.run.place
       policy: one_factor
       subject:
+        - "group:admins"
         - "group:mailpit"
-        - "group:admin"
-        - "group:all"
 
     - domain: cockpit.rohan.run.place
       policy: one_factor
       subject:
+        - "group:admins"
         - "group:cockpit"
-        - "group:admin"
-        - "group:all"
 
     - domain: openhands.rohan.run.place
       policy: one_factor
       subject:
+        - "group:admins"
         - "group:openhands"
-        - "group:admin"
-        - "group:all"
+        - "group:ai-dev-core"
 
     - domain: opencode.rohan.run.place
       policy: one_factor
       subject:
+        - "group:admins"
         - "group:opencode"
-        - "group:admin"
-        - "group:all"
+        - "group:ai-dev-core"
 
     - domain:
         - mail.rohan.run.place
         - webmail.rohan.run.place
       policy: one_factor
       subject:
+        - "group:admins"
         - "group:mail"
-        - "group:admin"
-        - "group:all"
+        - "group:mail-all"
+        - "group:ai-dev-core"
+        - "group:users"
 
 identity_providers:
   oidc:
