@@ -124,6 +124,10 @@ INSERT INTO "authentication_logs" VALUES(111,'2026-11-01 21:42:12.974800475+00:0
 INSERT INTO "authentication_logs" VALUES(112,'2026-11-01 21:42:22.313486307+00:00',1,0,'admin','1FA','172.18.0.1','','');
 INSERT INTO "authentication_logs" VALUES(113,'2026-11-01 21:42:31.299425824+00:00',1,0,'admin','1FA','172.18.0.1','','');
 INSERT INTO "authentication_logs" VALUES(114,'2026-11-01 21:42:47.371612637+00:00',1,0,'admin','1FA','172.18.0.1','','');
+INSERT INTO "authentication_logs" VALUES(115,'2026-11-01 21:44:05.699799534+00:00',1,0,'jatin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
+INSERT INTO "authentication_logs" VALUES(116,'2026-11-01 21:44:17.419485104+00:00',1,0,'admin','1FA','106.192.50.65','https://user.rohan.run.place/groups','GET');
+INSERT INTO "authentication_logs" VALUES(117,'2026-11-01 21:47:11.517964107+00:00',0,0,'jatin','1FA','172.18.0.1','','');
+INSERT INTO "authentication_logs" VALUES(118,'2026-11-01 21:47:20.468477205+00:00',1,0,'admin','1FA','172.18.0.1','','');
 CREATE TABLE banned_ip (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -533,7 +537,7 @@ INSERT INTO "sqlite_sequence" VALUES('duo_devices',0);
 INSERT INTO "sqlite_sequence" VALUES('user_preferences',2);
 INSERT INTO "sqlite_sequence" VALUES('encryption',3);
 INSERT INTO "sqlite_sequence" VALUES('user_opaque_identifier',0);
-INSERT INTO "sqlite_sequence" VALUES('authentication_logs',114);
+INSERT INTO "sqlite_sequence" VALUES('authentication_logs',118);
 INSERT INTO "sqlite_sequence" VALUES('migrations',29);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_blacklisted_jti',0);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_consent_preconfiguration',0);
