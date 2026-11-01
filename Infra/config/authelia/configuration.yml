@@ -1,14 +1,17 @@
 theme: dark
 
 session:
+  secret: e2c98baf8a836051ee70900a4413d5f59cce6d1ffb1559bd7389f2e04b0ef5d3
   cookies:
     - name: authelia_session
       domain: rohan.run.place
       authelia_url: https://auth.rohan.run.place
-      inactivity: 12h
-      expiration: 7d
-      remember_me: 30d
-
+      inactivity: 30d
+      expiration: 90d
+      remember_me: 365d
+  redis:
+    host: redis
+    port: 6379
 storage:
   local:
     path: /config/authelia.db
