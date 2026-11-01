@@ -1,0 +1,13 @@
+users:
+  admin:
+    displayname: "Admin User"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$kPauCUN4+oeoRdJcFpSkCQ$ZJ8hEGSBsIrFuVH+dU5cA5OcMSclFtCKomAtd8fM7Vs"
+    email: "admin@rohan.run.place"
+    groups:
+      - admins
+  user:
+    displayname: "Homelab User"
+    password: "$argon2id$v=19$m=65536,t=3,p=4$msq3KZ6oVyEgpM8uBXTHlw$CPp9Z8Tke38GqOH9Dz0MhJkh0IvlUCyiR6Ow2SEMK24"
+    email: "user@rohan.run.place"
+    groups:
+      - users

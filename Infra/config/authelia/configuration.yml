@@ -1,0 +1,110 @@
+theme: dark
+
+session:
+  cookies:
+    - name: authelia_session
+      domain: rohan.run.place
+      authelia_url: https://auth.rohan.run.place
+      inactivity: 12h
+      expiration: 7d
+      remember_me: 30d
+
+storage:
+  local:
+    path: /config/authelia.db
+  encryption_key: change-this-to-a-very-long-random-encryption-key-min-64-characters-long-please
+
+authentication_backend:
+  ldap:
+    implementation: "lldap"
+    address: "ldap://lldap:3890"
+    base_dn: "dc=rohan,dc=run,dc=place"
+    user: "uid=admin,ou=people,dc=rohan,dc=run,dc=place"
+    password: "admin12345"
+
+identity_validation:
+  reset_password:
+    jwt_secret: change-this-to-a-very-long-random-secret-for-jwt-reset
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: auth.rohan.run.place
+      policy: bypass
+    - domain:
+        - user.rohan.run.place
+        - users.rohan.run.place
+        - mailpit.rohan.run.place
+      policy: one_factor
+      subject:
+        - "group:admins"
+    - domain:
+        - cockpit.rohan.run.place
+        - openhands.rohan.run.place
+        - opencode.rohan.run.place
+        - mail.rohan.run.place
+        - webmail.rohan.run.place
+      policy: one_factor
+
+identity_providers:
+  oidc:
+    hmac_secret: "MwYRRCYxQkXjDdrW9TxNlEpPffw3oa0glZSr31v99DKvw0LcOfGBF4nlZkBQm8RD"
+    jwks:
+      - key_id: "default"
+        key: |
+          -----BEGIN PRIVATE KEY-----
+          MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDowFq9WVw3rxS8
+          qxwZzy+Gtg3ZnvoNWTJtEbW6nX36UMnsEY9CHOymUhqjm0qCj9iriPPClLNTV5CE
+          DNFYKz5IViE2dQZLVj7Z6C6sKD0MZAm9B59scyNaVSXIMIju6c1LEMVLRc0IaViY
+          nUsxZZLic1TqHEtLaN9wHFO4HD9EEcOu80vqFx4CH3K91f4gVaZBK57l3PAy/pIL
+          tDjfcusiYnTC3gdabYsGO9BkgFG8KUNpNCmXVoAluPFukxh465Iy4ChWysxB38Df
+          VcBXhTq0jCyaR7sm4h1Sb6PGbmPWQcydei6Nybg1sORrVeYZgJ4MQCKpMYAOQcbV
+          ctlFkS0BAgMBAAECggEAMP/V2okGff6Q6gtH1jMk+UI4djkewVKm6AlTbd8cF2eM
+          qvMjarK2K2mbjBf0PrpTzgD9+FffzMrhdLtSEzK/YPEo+tL2KUQV5UAZG0s5VvN0
+          jWQebvFqXukQFC4LleiIvKXiMy+Vs5CiAzcSDmso2h2XodWlEFIav/pmsZrYwtZn
+          wp7ymuqjhcdAU/usBUcs6giiTC/bc/2hwWt+k9qP3vG89ZFLamMde/KZWUOJWjEs
+          BQF+CuAAgb3Q3ZbfxEh/cgLrHiX/RsPTFfzXD/zPdAdEgsEKVwRVPP7mucAdhXRB
+          iqJZ/W37ZaMvN4xPQDOKDkOerAO6rRKF3RzY+ZrGlQKBgQD5zp6hpXvo0Py296su
+          iBFTf3CT7V1biGQ8QwaZfnSSJaWg6eJ4g1J6vBYEd/RipSBOSjHE7eGInePK07yi
+          lAQ8+NhLs+x4Y+9HGhhg1sJEQUomqKrBTVrHilrPs/Np0Iw4Xqa0W67JPC9Ssi/d
+          yJUnqzfI+KRKbPBGrGMs+nh6LwKBgQDuhX32vBNqeTTgyVcQXtFV+z1+xjZLzgD3
+          VtcS7nPSqPOaW/l66xkP5hlNwRMvy6MkxDYfe6T2A4y9Jo9VYh/y0kQIVNf0l7nt
+          bP6jdCWN8+v5jH+CX+PFKOECmG4c+AnfmSvS0Ts41GLFYngyWgi378fH7iVdP4y1
+          xZgygpRvzwKBgDdlN043STv+pBva3i4KZHU0rH1RRMOYgknOvzbokOcbzBfb5am9
+          zVuEPAmvpBT/8yMJVvIJolrOUIZY39rZofr3X9ehxY2I87W7tq460YebRts9yefl
+          xHy9VJf8mrzbT0zsyGD0d9UOMJxRAUZYRaMvV8aMRLpwX/P8JF4ECRVnAoGAESGP
+          WYBKmLQZ4ycy1J8qw9UmpotP7QPft+QJ0HdF5FR0IpsGgRiPlT++g4IhgaZLkmFx
+          TbOQtoasvg0d8FD64HLPphWJ6SxYkz/nzg+Sfu6M/UBlDBUdA9UazBfsmLIL635R
+          0nNqoHtImMqovV0QET3siGSHVHoy/f8yHjaYuKsCgYAn2MV6Y4PJCJqdfEIbhzsi
+          9KaoPctjrKlW/GiRXoBIc9QnbATuNVua3PZwGPzJTXY7L5Gx6ENg6/idUlDWPDJ5
+          tZAXDXU/FEFDZwhk+RhitMi3dZeTz5fFfMZDoyA/XuyqmQWFzp2Pb4hD9ICIErKe
+          2OL+fcasAE/rmXQ01GgvAg==
+          -----END PRIVATE KEY-----
+    clients:
+      - client_id: "default-client"
+        client_name: "Default Client"
+        client_secret: "$pbkdf2-sha512$310000$2mRIbM0qmbhqkpzQq4wYtg$2ho8ndwLRDeAO2lRRhcdanrBmkDyzcC7DUnoTRTV9YJzz14en6TQ8wxb4HBIJhvGxKMIY/iJYO8Rtv1Y2jQlNQ"
+        public: false
+        authorization_policy: "one_factor"
+        redirect_uris:
+          - "https://oauth.pstmn.io/v1/callback"
+          - "http://localhost:8080/callback"
+        scopes:
+          - "openid"
+          - "profile"
+          - "email"
+          - "groups"
+          - "offline_access"
+        response_types:
+          - "code"
+        grant_types:
+          - "authorization_code"
+          - "refresh_token"
+
+notifier:
+  disable_startup_check: true
+  smtp:
+    address: "smtp://mailpit:1025"
+    sender: "Authelia <admin@rohan.run.place>"
+    subject: "[Authelia] {title}"
+    disable_require_tls: true
