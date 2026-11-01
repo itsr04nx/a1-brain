@@ -116,6 +116,7 @@ INSERT INTO "authentication_logs" VALUES(103,'2026-11-01 21:25:06.997093736+00:0
 INSERT INTO "authentication_logs" VALUES(104,'2026-11-01 21:25:13.880681607+00:00',0,0,'admin','1FA','106.192.50.65','https://mail.rohan.run.place/view/41Ho0p5fiNMMsKOvFx9SIh','GET');
 INSERT INTO "authentication_logs" VALUES(105,'2026-11-01 21:25:17.99444859+00:00',1,0,'admin','1FA','106.192.50.65','https://mail.rohan.run.place/view/41Ho0p5fiNMMsKOvFx9SIh','GET');
 INSERT INTO "authentication_logs" VALUES(106,'2026-11-01 21:25:42.467783627+00:00',1,0,'admin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
+INSERT INTO "authentication_logs" VALUES(107,'2026-11-01 21:30:42.425145564+00:00',1,0,'admin','1FA','106.192.50.65','https://webmail.rohan.run.place/','GET');
 CREATE TABLE banned_ip (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -525,7 +526,7 @@ INSERT INTO "sqlite_sequence" VALUES('duo_devices',0);
 INSERT INTO "sqlite_sequence" VALUES('user_preferences',2);
 INSERT INTO "sqlite_sequence" VALUES('encryption',3);
 INSERT INTO "sqlite_sequence" VALUES('user_opaque_identifier',0);
-INSERT INTO "sqlite_sequence" VALUES('authentication_logs',106);
+INSERT INTO "sqlite_sequence" VALUES('authentication_logs',107);
 INSERT INTO "sqlite_sequence" VALUES('migrations',29);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_blacklisted_jti',0);
 INSERT INTO "sqlite_sequence" VALUES('oauth2_consent_preconfiguration',0);
