@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import sys
 import json
-import socket
-import ssl
 import urllib.request
 import subprocess
 
@@ -25,11 +23,20 @@ def get_lldap_token(ip):
     except Exception:
         return None
 
-def get_lldap_users(token, ip):
-    query = {"query": "{ users { id, email, displayName, groups { id, displayName } } }"}
-    req = urllib.request.Request(f"http://{ip}:{LLDAP_PORT}/api/graphql", data=json.dumps(query).encode(), headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+def get_lldap_data(token, ip):
+    query = """{
+        users {
+            id, email, displayName,
+            groups { id, displayName }
+        }
+        groups {
+            id, displayName,
+            attributes { name, value }
+        }
+    }"""
+    req = urllib.request.Request(f"http://{ip}:{LLDAP_PORT}/api/graphql", data=json.dumps({"query": query}).encode(), headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=3) as res:
-        return json.loads(res.read())["data"]["users"]
+        return json.loads(res.read())["data"]
 
 def audit_user(username):
     ip = get_lldap_ip()
@@ -38,7 +45,9 @@ def audit_user(username):
         print("[!] ERROR: Unable to connect to LLDAP directory service on port 17170.")
         sys.exit(1)
 
-    users = get_lldap_users(token, ip)
+    data = get_lldap_data(token, ip)
+    users = data["users"]
+    all_groups = {g["id"]: g for g in data["groups"]}
     user_data = next((u for u in users if u["id"].lower() == username.lower()), None)
 
     print("=" * 68)
@@ -58,18 +67,30 @@ def audit_user(username):
 
     email = user_data.get("email") or f"{username}@{BASE_DOMAIN}"
     display_name = user_data.get("displayName") or username
-    groups = [g["displayName"] for g in user_data.get("groups", [])]
-    is_admin = ("admins" in groups) or ("lldap_admin" in groups)
+    user_group_ids = [g["id"] for g in user_data.get("groups", [])]
+    user_group_names = [g["displayName"] for g in user_data.get("groups", [])]
+
+    # Collect all app-access permissions from user's groups
+    granted_apps = set()
+    for gid in user_group_ids:
+        grp = all_groups.get(gid)
+        if grp:
+            for attr in grp.get("attributes", []):
+                if attr["name"] == "app-access":
+                    granted_apps.update(attr.get("value", []))
+
+    is_admin = ("*" in granted_apps) or ("admin" in granted_apps) or ("all" in granted_apps)
 
     # 1. Directory Check
     print("[✓] 1. LLDAP Directory Identity:")
     print(f"    - Username: {user_data['id']}")
     print(f"    - Display Name: {display_name}")
     print(f"    - Primary Email: {email}")
-    print(f"    - Groups Assigned: {groups if groups else '[None]'}")
+    print(f"    - Groups Assigned: {user_group_names if user_group_names else '[None]'}")
+    print(f"    - Active 'app-access' Attributes: {sorted(list(granted_apps)) if granted_apps else '[None]'}")
 
     # 2. SSO Authentication Check
-    role_desc = "ADMINISTRATOR (Full Access)" if is_admin else "STANDARD USER (RBAC Governed)"
+    role_desc = "ADMINISTRATOR (Full Access)" if is_admin else "ROLE-BASED USER (Governed by app-access)"
     print("\n[✓] 2. Authelia Single Sign-On (SSO):")
     print(f"    - SSO Provider: https://auth.{BASE_DOMAIN}")
     print("    - Directory Sync: Instant (LDAP Backend active)")
@@ -84,8 +105,8 @@ def audit_user(username):
     print(f"    - Mailbox Storage: Isolated (/var/mail/{BASE_DOMAIN}/{username})")
 
     # 4. Webmail Access
-    has_mail = is_admin or ("mail" in groups) or ("users" in groups) or ("app-mail" in groups)
-    mail_status = "ALLOWED (Active)" if has_mail else "DENIED (Add 'mail' group in LLDAP)"
+    has_mail = is_admin or ("mail" in granted_apps)
+    mail_status = "ALLOWED (Active)" if has_mail else "DENIED (Add 'mail' to group's app-access)"
     print("\n[✓] 4. Multi-User Webmail (SnappyMail):")
     print(f"    - Webmail Portal: https://mail.{BASE_DOMAIN}")
     print(f"    - Webmail Access: {mail_status}")
@@ -94,18 +115,18 @@ def audit_user(username):
     # 5. Application Access Matrix
     def app_stat(app_name):
         if is_admin:
-            return "ALLOWED (Administrator)"
-        if app_name in groups or f"app-{app_name}" in groups:
-            return f"ALLOWED (Granted via group '{app_name}')"
-        return f"DENIED (Requires '{app_name}' group in LLDAP)"
+            return "ALLOWED (Administrator wildcard)"
+        if app_name in granted_apps:
+            return f"ALLOWED (Granted via group app-access: '{app_name}')"
+        return f"DENIED (Requires '{app_name}' in group's app-access)"
 
-    print("\n[✓] 5. Application Access Entitlements (Controlled in LLDAP):")
+    print("\n[✓] 5. Application Access Entitlements (Controlled via LLDAP 'app-access'):")
     print(f"    - Cockpit (Host Monitoring):       {app_stat('cockpit')}")
     print(f"    - OpenHands (AI Dev Agent):        {app_stat('openhands')}")
     print(f"    - OpenCode (Editor IDE):           {app_stat('opencode')}")
-    print(f"    - Webmail Inbox:                   {mail_status}")
+    print(f"    - Webmail Inbox:                   {app_stat('mail')}")
     print(f"    - Developer Mailpit:               {app_stat('mailpit')}")
-    print(f"    - User Admin (user.{BASE_DOMAIN}):   {'ALLOWED (Administrator)' if is_admin else 'DENIED (Admins Only)'}")
+    print(f"    - User Admin (user.{BASE_DOMAIN}):   {app_stat('user-admin')}")
 
     print("=" * 68)
     print("OVERALL STATUS: 100% ONBOARDED & OPERATIONAL")
