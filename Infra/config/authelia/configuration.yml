@@ -48,10 +48,6 @@ access_control:
         - user.rohan.run.place
         - users.rohan.run.place
       policy: one_factor
-      subject:
-        - "group:admins"
-        - "group:lldap_admin"
-        - "group:user-admin"
 
     - domain: mailpit.rohan.run.place
       policy: one_factor
