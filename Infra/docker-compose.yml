@@ -22,7 +22,8 @@ services:
     image: redis:7-alpine
     container_name: authelia-redis
     restart: unless-stopped
-    command: ["--save", "", "--appendonly", "no"]
+    volumes:
+      - ./data/redis:/data
 
   lldap:
     image: nitnelave/lldap:latest
