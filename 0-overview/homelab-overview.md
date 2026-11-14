@@ -26,6 +26,7 @@
 | Cockpit | `cockpit.rohan.run.place` | 443 | Behind SSO / Client Cert |
 | Mailpit Inbox | `mail.rohan.run.place` | 443 | Behind SSO / Client Cert |
 | Webmail (SnappyMail) | `webmail.rohan.run.place` | 443 | Behind SSO / Client Cert |
+| Koel Music Server | koel.rohan.run.place | 443 | Hosted on micro-2 (Port 8000) |
 
 ## Documentation References
 - [email-and-smtp-guide.md](file:///home/ubuntu/Memory/email-and-smtp-guide.md) — Comprehensive SMTP & mailing guide

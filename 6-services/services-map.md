@@ -10,6 +10,7 @@
 | `opencode.rohan.run.place` | OpenCode (100.72.142.64:4096) | 4096 | one_factor | Yes | Supported |
 | `mail.rohan.run.place` | Mailpit Web Inbox | 8025 | one_factor | Yes | Supported |
 | `webmail.rohan.run.place` | SnappyMail Client | 8888 | one_factor | Yes | Supported |
+| koel.rohan.run.place | Koel Music Server (100.107.161.3:8000) | 8000 | Native Koel Auth | No | N/A |
 
 ## Mail Services
 
