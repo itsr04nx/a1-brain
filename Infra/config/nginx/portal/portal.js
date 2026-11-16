@@ -159,20 +159,9 @@
         <div class="salesskip-right-brand">${BRAND_NAME}</div>
         <div class="salesskip-welcome-wrap">
           <h2 class="salesskip-welcome-title">Welcome Back!</h2>
-          <p class="salesskip-welcome-sub">
-            Don't have an account? <span class="salesskip-link" id="salesskip-create-btn">Create a new account now</span>, it's FREE! Takes less than a minute.
-          </p>
         </div>
       `;
       form.parentNode.insertBefore(rightHeader, form);
-
-      const createBtn = document.getElementById('salesskip-create-btn');
-      if (createBtn) {
-        createBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-          window.location.href = 'https://user.rohan.run.place/';
-        });
-      }
     }
 
     // Customize Primary Button Text to "Login Now"
