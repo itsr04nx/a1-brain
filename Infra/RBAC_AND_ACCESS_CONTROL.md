@@ -189,3 +189,48 @@ Example output:
     - OpenHands:                       ALLOWED (Member of developers)
     - User Admin (user.rohan.run.place): DENIED (Restricted to Admins)
 ```
+
+
+---
+
+## 8. LLDAP Seamless SSO Bridge & WASM Autologin Architecture
+
+LLDAP's web interface is a client-side Single Page Application (SPA) written in Rust/WebAssembly (Yew). It manages user sessions through four local browser cookies:
+- `token`: HS512-signed JWT token carrying username, groups, and permissions used for GraphQL (`/api/graphql`) authentication.
+- `user_id`: Username string read by WASM on startup to identify the active user.
+- `is_admin`: Boolean string (`"true"` | `"false"`) read by WASM to determine whether to render the admin directory or user self-service view.
+- `refresh_token`: 30-day token used by the client for automatic token renewal (`POST /auth/refresh`).
+
+### Architecture & Request Flow
+
+```
+[ Browser visits https://user.rohan.run.place/ ]
+                     │
+                     ▼
+             [ authelia-nginx ]
+                     │
+     [ auth_request /internal/authelia/authz ]
+         ├─ 401 Unauthorized ──► 302 to https://auth.rohan.run.place/
+         └─ 200 OK (Remote-User: sadik, Remote-Groups: ...)
+                     │
+                     ▼
+       [ lldap_sso_bridge (Port 17171) ]
+       - Inspects Remote-User and queries LLDAP SQLite DB for admin groups
+       - Generates 7-day HS512 JWT token matching LLDAP_JWT_SECRET
+       - Emits 4 cookies: token, user_id, is_admin, refresh_token
+       - On GET /: 302 Redirect to /users with all 4 cookies
+       - On GET /users: 200 OK with index.html and all 4 cookies
+                     │
+                     ▼
+[ Browser loads WASM with cookies pre-set in document.cookie ]
+- WASM App boots directly into /users without LoginForm
+- WASM sends GraphQL queries to /api/graphql with Cookie: token=...
+- Nginx routes /api/ directly to lldap:17170
+- Full Admin Directory rendered seamlessly!
+```
+
+### Key Service Components
+- **Systemd Service**: `lldap-sso-bridge.service` (`/etc/systemd/system/lldap-sso-bridge.service`)
+- **Bridge Script**: `/home/ubuntu/Workspace/authelia/lldap_sso_bridge.py` (mirrored in `Infra/scripts/lldap_sso_bridge.py`)
+- **Reverse Proxy**: `/home/ubuntu/Workspace/authelia/nginx/default.conf` (mirrored in `Infra/config/nginx/default.conf`)
+- **Enrolled Admins**: `admin`, `rohan`, `sadik`
