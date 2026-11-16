@@ -1,6 +1,8 @@
-// Rohan Homelab Application Launcher & SalesSkip SSO Experience
+// Rohan Run Place - Unified SSO & Homelab Portal Experience
 (function () {
   'use strict';
+
+  const BRAND_NAME = 'Rohan Run Place';
 
   const APPS = [
     {
@@ -97,14 +99,17 @@
     }
   }
 
+  // -------------------------------------------------------------------------
+  // 1. ENHANCE LOGIN PAGE (Step 1)
+  // -------------------------------------------------------------------------
   function enhanceLoginPage() {
-    const stage = document.getElementById('first-factor-stage') || document.getElementById('second-factor-stage');
+    const stage = document.getElementById('first-factor-stage');
     if (!stage) return;
 
     const cardContainer = stage.querySelector('.mx-auto.w-full');
     if (!cardContainer) return;
 
-    // 1. Prepend Left Blue Hero Panel if not present
+    // Prepend Left Blue Hero Panel with Unsplash Backdrop
     if (!document.getElementById('salesskip-hero-panel')) {
       const heroPanel = document.createElement('div');
       heroPanel.id = 'salesskip-hero-panel';
@@ -123,15 +128,15 @@
 
         <div class="salesskip-hero-content">
           <h1 class="salesskip-hero-title">
-            Hello<br/>SalesSkip! <span class="wave-emoji">👋</span>
+            Hello<br/>${BRAND_NAME}! <span class="wave-emoji">👋</span>
           </h1>
           <p class="salesskip-hero-desc">
-            Skip repetitive and manual sales-marketing tasks. Get highly productive through automation and save tons of time!
+            Skip repetitive and manual tasks. Get highly productive through automated workflows, cloud browser sessions, and save tons of time!
           </p>
         </div>
 
         <div class="salesskip-hero-footer">
-          © 2022 SalesSkip. All rights reserved.
+          © 2026 ${BRAND_NAME}. All rights reserved.
         </div>
 
         <!-- Concentric geometric curved wireframes in background -->
@@ -145,13 +150,13 @@
       cardContainer.insertBefore(heroPanel, cardContainer.firstChild);
     }
 
-    // 2. Insert Right Panel Header above form
+    // Insert Right Panel Header above form
     const form = stage.querySelector('#form-login') || stage.querySelector('form');
     if (form && !document.getElementById('salesskip-right-header')) {
       const rightHeader = document.createElement('div');
       rightHeader.id = 'salesskip-right-header';
       rightHeader.innerHTML = `
-        <div class="salesskip-right-brand">SalesSkip</div>
+        <div class="salesskip-right-brand">${BRAND_NAME}</div>
         <div class="salesskip-welcome-wrap">
           <h2 class="salesskip-welcome-title">Welcome Back!</h2>
           <p class="salesskip-welcome-sub">
@@ -170,7 +175,7 @@
       }
     }
 
-    // 3. Customize Primary Button Text to "Login Now"
+    // Customize Primary Button Text to "Login Now"
     const signInBtn = stage.querySelector('#sign-in-button');
     if (signInBtn) {
       if (signInBtn.childNodes && signInBtn.childNodes.length > 0) {
@@ -183,20 +188,11 @@
       }
     }
 
-    // 4. Insert Google Login Button & "Forget password? Click here"
+    // Insert "Forget password? Click here"
     if (form && !document.getElementById('salesskip-footer-links')) {
       const footerLinks = document.createElement('div');
       footerLinks.id = 'salesskip-footer-links';
       footerLinks.innerHTML = `
-        <button type="button" class="salesskip-google-btn" id="salesskip-google-btn">
-          <svg class="salesskip-google-icon" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-          </svg>
-          Login with Google
-        </button>
         <div class="salesskip-forget-wrap">
           Forget password? <span class="salesskip-click-here" id="salesskip-forget-link">Click here</span>
         </div>
@@ -207,29 +203,185 @@
       if (forgetLink) {
         forgetLink.addEventListener('click', (e) => {
           e.preventDefault();
-          const origReset = document.getElementById('reset-password-button');
-          if (origReset) {
-            origReset.click();
-          } else {
-            window.location.href = '/reset-password/step1';
-          }
-        });
-      }
-
-      const googleBtn = document.getElementById('salesskip-google-btn');
-      if (googleBtn) {
-        googleBtn.addEventListener('click', () => {
-          const passkeyBtn = document.querySelector('button[id*="passkey"]');
-          if (passkeyBtn) {
-            passkeyBtn.click();
-          } else {
-            signInBtn?.click();
-          }
+          window.location.href = '/reset-password/step1';
         });
       }
     }
   }
 
+  // -------------------------------------------------------------------------
+  // 2. ENHANCE FORGOT PASSWORD PAGE (Step 1: Enter Username)
+  // -------------------------------------------------------------------------
+  function enhanceResetPasswordStep1() {
+    const stage = document.getElementById('reset-password-step1-stage');
+    if (!stage) return;
+
+    const cardContainer = stage.querySelector('.mx-auto.w-full');
+    if (!cardContainer) return;
+
+    // Prepend Left Hero Panel (Architectural Unsplash Backdrop)
+    if (!document.getElementById('reset-hero-panel')) {
+      const heroPanel = document.createElement('div');
+      heroPanel.id = 'reset-hero-panel';
+      heroPanel.className = 'salesskip-hero-panel reset-hero';
+      heroPanel.innerHTML = `
+        <div class="salesskip-star-icon">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#ffffff" stroke-width="7" stroke-linecap="round">
+              <line x1="32" y1="10" x2="32" y2="54"/>
+              <line x1="10" y1="32" x2="54" y2="32"/>
+              <line x1="16.4" y1="16.4" x2="47.6" y2="47.6"/>
+              <line x1="47.6" y1="16.4" x2="16.4" y2="47.6"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="salesskip-hero-content">
+          <h1 class="salesskip-hero-title">
+            Reset<br/>Password 🔐
+          </h1>
+          <p class="salesskip-hero-desc">
+            Forgot your password? No problem. Enter your username or email address and we'll help you securely verify your identity.
+          </p>
+        </div>
+
+        <div class="salesskip-hero-footer">
+          © 2026 ${BRAND_NAME}. All rights reserved.
+        </div>
+
+        <!-- Concentric geometric curved wireframes in background -->
+        <svg class="salesskip-geo-lines" viewBox="0 0 500 500" fill="none">
+          <rect x="140" y="40" width="320" height="420" rx="42" transform="rotate(20 140 40)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+          <rect x="175" y="70" width="300" height="390" rx="42" transform="rotate(24 175 70)" stroke="rgba(255,255,255,0.11)" stroke-width="1.5"/>
+          <rect x="210" y="100" width="280" height="360" rx="42" transform="rotate(28 210 100)" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+        </svg>
+      `;
+      cardContainer.insertBefore(heroPanel, cardContainer.firstChild);
+    }
+
+    // Insert Right Header
+    const form = stage.querySelector('#form-reset-password-username') || stage.querySelector('form');
+    if (form && !document.getElementById('reset-step1-header')) {
+      const rightHeader = document.createElement('div');
+      rightHeader.id = 'reset-step1-header';
+      rightHeader.innerHTML = `
+        <div class="salesskip-right-brand">${BRAND_NAME}</div>
+        <div class="salesskip-welcome-wrap">
+          <h2 class="salesskip-welcome-title">Forgot Password?</h2>
+          <p class="salesskip-welcome-sub">
+            Enter your account username below to receive a secure identity verification link.
+          </p>
+        </div>
+      `;
+      form.parentNode.insertBefore(rightHeader, form);
+    }
+
+    // Customize Buttons
+    const resetBtn = stage.querySelector('#reset-button');
+    if (resetBtn) {
+      for (let i = 0; i < resetBtn.childNodes.length; i++) {
+        if (resetBtn.childNodes[i].nodeType === Node.TEXT_NODE) {
+          resetBtn.childNodes[i].nodeValue = 'Send Reset Link';
+          break;
+        }
+      }
+    }
+
+    const cancelBtn = stage.querySelector('#cancel-button');
+    if (cancelBtn) {
+      for (let i = 0; i < cancelBtn.childNodes.length; i++) {
+        if (cancelBtn.childNodes[i].nodeType === Node.TEXT_NODE) {
+          cancelBtn.childNodes[i].nodeValue = 'Back to Login';
+          break;
+        }
+      }
+      cancelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/';
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 3. ENHANCE FORGOT PASSWORD PAGE (Step 2: Enter New Password)
+  // -------------------------------------------------------------------------
+  function enhanceResetPasswordStep2() {
+    const stage = document.getElementById('reset-password-step2-stage');
+    if (!stage) return;
+
+    const cardContainer = stage.querySelector('.mx-auto.w-full');
+    if (!cardContainer) return;
+
+    if (!document.getElementById('reset-step2-hero-panel')) {
+      const heroPanel = document.createElement('div');
+      heroPanel.id = 'reset-step2-hero-panel';
+      heroPanel.className = 'salesskip-hero-panel reset-hero';
+      heroPanel.innerHTML = `
+        <div class="salesskip-star-icon">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#ffffff" stroke-width="7" stroke-linecap="round">
+              <line x1="32" y1="10" x2="32" y2="54"/>
+              <line x1="10" y1="32" x2="54" y2="32"/>
+              <line x1="16.4" y1="16.4" x2="47.6" y2="47.6"/>
+              <line x1="47.6" y1="16.4" x2="16.4" y2="47.6"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="salesskip-hero-content">
+          <h1 class="salesskip-hero-title">
+            Set New<br/>Password 🔑
+          </h1>
+          <p class="salesskip-hero-desc">
+            Choose a strong, unique password for your ${BRAND_NAME} account to keep your services secure.
+          </p>
+        </div>
+
+        <div class="salesskip-hero-footer">
+          © 2026 ${BRAND_NAME}. All rights reserved.
+        </div>
+      `;
+      cardContainer.insertBefore(heroPanel, cardContainer.firstChild);
+    }
+
+    const form = stage.querySelector('#form-reset-password') || stage.querySelector('form');
+    if (form && !document.getElementById('reset-step2-header')) {
+      const rightHeader = document.createElement('div');
+      rightHeader.id = 'reset-step2-header';
+      rightHeader.innerHTML = `
+        <div class="salesskip-right-brand">${BRAND_NAME}</div>
+        <div class="salesskip-welcome-wrap">
+          <h2 class="salesskip-welcome-title">Set New Password</h2>
+          <p class="salesskip-welcome-sub">
+            Please enter and confirm your new password below.
+          </p>
+        </div>
+      `;
+      form.parentNode.insertBefore(rightHeader, form);
+    }
+
+    const resetBtn = stage.querySelector('#reset-button');
+    if (resetBtn) {
+      for (let i = 0; i < resetBtn.childNodes.length; i++) {
+        if (resetBtn.childNodes[i].nodeType === Node.TEXT_NODE) {
+          resetBtn.childNodes[i].nodeValue = 'Update Password';
+          break;
+        }
+      }
+    }
+
+    const cancelBtn = stage.querySelector('#cancel-button');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.location.href = '/';
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 4. APPLICATION LAUNCHER (AUTHENTICATED)
+  // -------------------------------------------------------------------------
   function renderPortal(user) {
     const root = document.getElementById('root');
     if (root) {
@@ -258,7 +410,7 @@
             </svg>
           </div>
           <div class="portal-brand-text">
-            <h1>Homelab Portal</h1>
+            <h1>${BRAND_NAME} Portal</h1>
             <p><span class="status-dot-pulse"></span> SSO Active</p>
           </div>
         </div>
@@ -391,24 +543,30 @@
       .replace(/'/g, '&#39;');
   }
 
-  // Session check and dynamic page initialization
+  // -------------------------------------------------------------------------
+  // 5. LIFECYCLE & MUTATION OBSERVER
+  // -------------------------------------------------------------------------
+  function dispatchEnhancement() {
+    if (document.getElementById('first-factor-stage')) {
+      enhanceLoginPage();
+    } else if (document.getElementById('reset-password-step1-stage')) {
+      enhanceResetPasswordStep1();
+    } else if (document.getElementById('reset-password-step2-stage')) {
+      enhanceResetPasswordStep2();
+    }
+  }
+
   async function start() {
     const user = await checkUserSession();
     if (user) {
       renderPortal(user);
     } else {
-      // Unauthenticated: Enhance the Login stage
-      enhanceLoginPage();
+      dispatchEnhancement();
 
-      // Observe DOM with throttled session check
       let isCheckingSession = false;
       const observer = new MutationObserver(async () => {
-        // Run enhanceLoginPage if hero panel is not yet present
-        if (!document.getElementById('salesskip-hero-panel')) {
-          enhanceLoginPage();
-        }
+        dispatchEnhancement();
 
-        // Only check session when authenticated stage arrives
         const root = document.getElementById('root');
         if (root && root.querySelector('#authenticated-stage') && !isCheckingSession) {
           isCheckingSession = true;

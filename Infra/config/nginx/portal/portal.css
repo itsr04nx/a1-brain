@@ -1,9 +1,12 @@
 /* ==========================================================================
-   SalesSkip Pixel-Perfect Split-Screen Login Theme & Homelab Portal
+   Rohan Run Place - Unified SSO & Homelab Portal Theme
+   Modern Split-Screen with Unsplash Photography & Plus Jakarta Sans
    ========================================================================== */
 
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --bg-portal: #0f172a;
   --bg-surface: #1e293b;
   --bg-card: #1e293b;
@@ -19,7 +22,7 @@
 }
 
 /* ==========================================================================
-   1. GLOBAL PAGE & AUTHELIA BASE OVERRIDES
+   1. GLOBAL PAGE & BASE OVERRIDES
    ========================================================================== */
 html, body {
   margin: 0;
@@ -33,43 +36,89 @@ html, body {
 body, body[data-theme="dark"], body[data-theme="light"] {
   background-color: #edf2f7 !important;
   color: #111827 !important;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Ethereal blurred Unsplash architectural ambient layer on body */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(237, 242, 247, 0.86) 0%, rgba(226, 232, 240, 0.94) 100%),
+    url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+  filter: blur(32px);
+  transform: scale(1.05);
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* ==========================================================================
-   2. SPLIT-SCREEN CARD CONTAINER
+   2. SPLIT-SCREEN CARD CONTAINER (ALL STAGES)
    ========================================================================== */
 #first-factor-stage,
-#second-factor-stage {
+#second-factor-stage,
+#reset-password-step1-stage,
+#reset-password-step2-stage {
   min-height: 100vh !important;
   width: 100vw !important;
   padding: 40px 16px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background-color: #edf2f7 !important;
   box-sizing: border-box !important;
   position: relative !important;
+  z-index: 1 !important;
 }
 
-/* Hide any previous background pseudo-elements */
+/* Hide ambient pseudo-elements */
 #first-factor-stage::before,
-#second-factor-stage::before {
+#second-factor-stage::before,
+#reset-password-step1-stage::before,
+#reset-password-step2-stage::before {
   display: none !important;
 }
 
-/* Hide default Authelia logo & h5/h6 titles */
+/* Hide default Authelia logo & h5/h6 titles and footer links on all stages */
 #first-factor-stage .flex-col > .p-2,
 #first-factor-stage .flex-col > .w-full:has(h5),
 #first-factor-stage .flex-col > .w-full:has(h6),
+#first-factor-stage a[href*="authelia"],
+#first-factor-stage div:has(> a[href*="authelia"]),
 #second-factor-stage .flex-col > .p-2,
 #second-factor-stage .flex-col > .w-full:has(h5),
-#second-factor-stage .flex-col > .w-full:has(h6) {
+#second-factor-stage .flex-col > .w-full:has(h6),
+#second-factor-stage a[href*="authelia"],
+#second-factor-stage div:has(> a[href*="authelia"]),
+#reset-password-step1-stage .flex-col > .p-2,
+#reset-password-step1-stage .flex-col > .w-full:has(h5),
+#reset-password-step1-stage .flex-col > .w-full:has(h6),
+#reset-password-step1-stage a[href*="authelia"],
+#reset-password-step1-stage div:has(> a[href*="authelia"]),
+#reset-password-step2-stage .flex-col > .p-2,
+#reset-password-step2-stage .flex-col > .w-full:has(h5),
+#reset-password-step2-stage .flex-col > .w-full:has(h6),
+#reset-password-step2-stage a[href*="authelia"],
+#reset-password-step2-stage div:has(> a[href*="authelia"]) {
   display: none !important;
+}
+
+header {
+  position: absolute !important;
+  top: 14px !important;
+  right: 20px !important;
+  z-index: 50 !important;
 }
 
 /* The Main Split-Screen Card */
 #first-factor-stage > div.mx-auto,
-#second-factor-stage > div.mx-auto {
+#second-factor-stage > div.mx-auto,
+#reset-password-step1-stage > div.mx-auto,
+#reset-password-step2-stage > div.mx-auto {
   max-width: 1080px !important;
   width: 92vw !important;
   min-height: 640px !important;
@@ -83,6 +132,7 @@ body, body[data-theme="dark"], body[data-theme="light"] {
   overflow: hidden !important;
   position: relative !important;
   box-sizing: border-box !important;
+  z-index: 2 !important;
   animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -98,13 +148,15 @@ body, body[data-theme="dark"], body[data-theme="light"] {
 }
 
 /* ==========================================================================
-   3. LEFT HERO PANEL (ROYAL BLUE)
+   3. LEFT HERO PANEL (UNSPLASH BACKDROP + ROYAL BLUE GRADIENT)
    ========================================================================== */
 .salesskip-hero-panel {
   flex: 1 1 54% !important;
   width: 54% !important;
   min-height: 640px !important;
-  background: linear-gradient(145deg, #2837ea 0%, #1c25b8 55%, #151d95 100%) !important;
+  background:
+    linear-gradient(145deg, rgba(37, 66, 234, 0.88) 0%, rgba(28, 37, 184, 0.92) 55%, rgba(15, 23, 110, 0.96) 100%),
+    url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat !important;
   color: #ffffff !important;
   padding: 56px 52px !important;
   display: flex !important;
@@ -116,7 +168,14 @@ body, body[data-theme="dark"], body[data-theme="light"] {
   z-index: 1;
 }
 
-/* Soft ambient shadow separating panels */
+/* Reset Password Variant: Architectural Unsplash Backdrop */
+.salesskip-hero-panel.reset-hero {
+  background:
+    linear-gradient(145deg, rgba(30, 58, 215, 0.88) 0%, rgba(20, 30, 160, 0.92) 55%, rgba(10, 18, 90, 0.96) 100%),
+    url('https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat !important;
+}
+
+/* Soft ambient shadow separating left and right panels */
 .salesskip-hero-panel::after {
   content: "";
   position: absolute;
@@ -157,6 +216,7 @@ body, body[data-theme="dark"], body[data-theme="light"] {
   letter-spacing: -0.035em !important;
   color: #ffffff !important;
   margin: 0 0 20px 0 !important;
+  font-family: var(--font-sans) !important;
 }
 
 .salesskip-hero-title .wave-emoji {
@@ -180,8 +240,8 @@ body, body[data-theme="dark"], body[data-theme="light"] {
 .salesskip-hero-desc {
   font-size: 1.05rem !important;
   line-height: 1.6 !important;
-  color: rgba(255, 255, 255, 0.85) !important;
-  max-width: 420px !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  max-width: 440px !important;
   margin: 0 !important;
   font-weight: 400 !important;
 }
@@ -206,10 +266,12 @@ body, body[data-theme="dark"], body[data-theme="light"] {
 }
 
 /* ==========================================================================
-   4. RIGHT FORM PANEL (CLEAN WHITE)
+   4. RIGHT FORM PANEL (CLEAN PROFESSIONAL WHITE)
    ========================================================================== */
 #first-factor-stage .flex-col.items-stretch,
-#second-factor-stage .flex-col.items-stretch {
+#second-factor-stage .flex-col.items-stretch,
+#reset-password-step1-stage .flex-col.items-stretch,
+#reset-password-step2-stage .flex-col.items-stretch {
   flex: 1 1 46% !important;
   width: 46% !important;
   background: #ffffff !important;
@@ -223,7 +285,7 @@ body, body[data-theme="dark"], body[data-theme="light"] {
   z-index: 2;
 }
 
-/* Top brand logo */
+/* Top brand name: Rohan Run Place */
 .salesskip-right-brand {
   font-size: 1.65rem !important;
   font-weight: 800 !important;
@@ -231,9 +293,10 @@ body, body[data-theme="dark"], body[data-theme="light"] {
   color: #111827 !important;
   margin-bottom: 38px !important;
   text-align: left !important;
+  font-family: var(--font-sans) !important;
 }
 
-/* Welcome Back header */
+/* Welcome Back / Forgot Password header */
 .salesskip-welcome-wrap {
   margin-bottom: 24px !important;
   text-align: left !important;
@@ -246,12 +309,13 @@ body, body[data-theme="dark"], body[data-theme="light"] {
   color: #111827 !important;
   margin: 0 0 8px 0 !important;
   line-height: 1.2 !important;
+  font-family: var(--font-sans) !important;
 }
 
 .salesskip-welcome-sub {
   font-size: 0.8125rem !important;
   color: #6b7280 !important;
-  line-height: 1.4 !important;
+  line-height: 1.45 !important;
   margin: 0 !important;
 }
 
@@ -263,18 +327,26 @@ body, body[data-theme="dark"], body[data-theme="light"] {
 }
 
 /* Form container */
-#form-login {
+#form-login,
+#form-reset-password-username,
+#form-reset-password {
   width: 100% !important;
 }
 
-#form-login .grid {
+#form-login .grid,
+#form-reset-password-username .grid,
+#form-reset-password .grid {
   gap: 16px !important;
 }
 
-/* Inputs styled cleanly like the image */
+/* Inputs styled cleanly */
 #form-login input[data-slot="floating-input"],
+#form-reset-password-username input[data-slot="floating-input"],
+#form-reset-password input[data-slot="floating-input"],
 #username-textfield,
-#password-textfield {
+#password-textfield,
+#password1-textfield,
+#password2-textfield {
   background-color: #f9fafb !important;
   border: 1px solid #e5e7eb !important;
   border-bottom: 2px solid #111827 !important;
@@ -282,6 +354,7 @@ body, body[data-theme="dark"], body[data-theme="light"] {
   color: #111827 !important;
   font-size: 0.95rem !important;
   font-weight: 500 !important;
+  font-family: var(--font-sans) !important;
   height: 50px !important;
   padding: 16px 14px 4px 14px !important;
   transition: all 0.15s ease !important;
@@ -290,22 +363,26 @@ body, body[data-theme="dark"], body[data-theme="light"] {
 }
 
 #form-login input[data-slot="floating-input"]:focus,
+#form-reset-password-username input[data-slot="floating-input"]:focus,
+#form-reset-password input[data-slot="floating-input"]:focus,
 #username-textfield:focus,
-#password-textfield:focus {
+#password-textfield:focus,
+#password1-textfield:focus,
+#password2-textfield:focus {
   background-color: #ffffff !important;
   border-color: #d1d5db !important;
   border-bottom: 2.5px solid #111827 !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
-#form-login label {
+label {
   color: #9ca3af !important;
   font-size: 0.825rem !important;
   font-weight: 500 !important;
 }
 
-#form-login input:focus ~ label,
-#form-login input:not(:placeholder-shown) ~ label {
+input:focus ~ label,
+input:not(:placeholder-shown) ~ label {
   color: #111827 !important;
   font-weight: 600 !important;
 }
@@ -316,14 +393,16 @@ button[aria-label*="toggle" i] {
   color: #6b7280 !important;
 }
 
-/* Primary "Login Now" button */
-#sign-in-button {
+/* Primary Action Buttons (#sign-in-button, #reset-button) */
+#sign-in-button,
+#reset-button {
   background: #18181b !important;
   border: none !important;
   border-radius: 8px !important;
   color: #ffffff !important;
   font-weight: 600 !important;
   font-size: 0.95rem !important;
+  font-family: var(--font-sans) !important;
   height: 48px !important;
   width: 100% !important;
   margin-top: 10px !important;
@@ -335,48 +414,44 @@ button[aria-label*="toggle" i] {
   justify-content: center !important;
 }
 
-#sign-in-button:hover:not(:disabled) {
+#sign-in-button:hover:not(:disabled),
+#reset-button:hover:not(:disabled) {
   background: #27272a !important;
   transform: translateY(-1px) !important;
 }
 
-#sign-in-button:active:not(:disabled) {
+#sign-in-button:active:not(:disabled),
+#reset-button:active:not(:disabled) {
   transform: translateY(0) !important;
 }
 
-/* Secondary "Login with Google" button */
-.salesskip-google-btn {
+/* Cancel / Back to Login Button (#cancel-button) */
+#cancel-button {
   background: #ffffff !important;
   border: 1px solid #e5e7eb !important;
   border-radius: 8px !important;
-  color: #111827 !important;
+  color: #374151 !important;
   font-weight: 600 !important;
-  font-size: 0.925rem !important;
+  font-size: 0.95rem !important;
+  font-family: var(--font-sans) !important;
   height: 48px !important;
-  width: 100% !important;
-  margin-top: 12px !important;
+  margin-top: 10px !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 12px !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
   transition: background-color 0.15s ease, border-color 0.15s ease !important;
 }
 
-.salesskip-google-btn:hover {
+#cancel-button:hover {
   background: #f9fafb !important;
   border-color: #d1d5db !important;
 }
 
-.salesskip-google-icon {
-  width: 18px !important;
-  height: 18px !important;
-}
-
 /* Forget password link */
 .salesskip-forget-wrap {
-  margin-top: 22px !important;
+  margin-top: 24px !important;
   text-align: center !important;
   font-size: 0.825rem !important;
   color: #6b7280 !important;
@@ -395,16 +470,20 @@ button[aria-label*="toggle" i] {
   display: none !important;
 }
 
-/* Hide Powered by Authelia link on login stage */
+/* Hide Powered by Authelia link on login & reset stages */
 #first-factor-stage .flex.items-center.justify-center.gap-2.w-full,
-#second-factor-stage .flex.items-center.justify-center.gap-2.w-full {
+#second-factor-stage .flex.items-center.justify-center.gap-2.w-full,
+#reset-password-step1-stage .flex.items-center.justify-center.gap-2.w-full,
+#reset-password-step2-stage .flex.items-center.justify-center.gap-2.w-full {
   display: none !important;
 }
 
 /* Responsive Stacking */
 @media (max-width: 860px) {
   #first-factor-stage > div.mx-auto,
-  #second-factor-stage > div.mx-auto {
+  #second-factor-stage > div.mx-auto,
+  #reset-password-step1-stage > div.mx-auto,
+  #reset-password-step2-stage > div.mx-auto {
     flex-direction: column !important;
     max-width: 480px !important;
     width: 95vw !important;
@@ -423,7 +502,9 @@ button[aria-label*="toggle" i] {
     font-size: 0.95rem !important;
   }
   #first-factor-stage .flex-col.items-stretch,
-  #second-factor-stage .flex-col.items-stretch {
+  #second-factor-stage .flex-col.items-stretch,
+  #reset-password-step1-stage .flex-col.items-stretch,
+  #reset-password-step2-stage .flex-col.items-stretch {
     width: 100% !important;
     flex: none !important;
     padding: 36px 28px !important;
