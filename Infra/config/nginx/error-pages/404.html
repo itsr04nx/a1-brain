@@ -3,143 +3,344 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page Not Found | Rohan Homelab</title>
+    <title>Page Not Found | Rohan Run Place</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-sans);
+            background-color: #edf2f7;
+            color: #111827;
+            -webkit-font-smoothing: antialiased;
+        }
         body {
-            background-color: #25282c;
-            color: #ffffff;
-            font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 24px;
-            -webkit-font-smoothing: antialiased;
+            padding: 32px 16px;
+            position: relative;
+            overflow-x: hidden;
         }
-        .container {
+        /* Ethereal blurred Unsplash architectural ambient layer */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background:
+                radial-gradient(circle at 50% 50%, rgba(237, 242, 247, 0.86) 0%, rgba(226, 232, 240, 0.94) 100%),
+                url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+            filter: blur(32px);
+            transform: scale(1.05);
+            z-index: 0;
+            pointer-events: none;
+        }
+        .error-card {
             width: 100%;
-            max-width: 380px;
-            text-align: center;
-        }
-        .icon {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 18px;
+            max-width: 960px;
+            min-height: 540px;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.16), 0 0 1px rgba(0, 0, 0, 0.1);
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: row;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        .icon svg {
-            width: 56px;
-            height: 56px;
+        @keyframes cardFadeIn {
+            from { opacity: 0; transform: translateY(8px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 400;
-            margin-bottom: 10px;
-            letter-spacing: -0.01em;
+        /* Left Hero Panel */
+        .hero-panel {
+            flex: 1 1 50%;
+            width: 50%;
+            min-height: 540px;
+            background:
+                linear-gradient(145deg, rgba(37, 66, 234, 0.90) 0%, rgba(24, 34, 175, 0.94) 55%, rgba(12, 19, 105, 0.98) 100%),
+                url('https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
             color: #ffffff;
+            padding: 48px 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .hero-panel::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: -20px;
+            width: 40px;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent);
+            pointer-events: none;
+            z-index: 2;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(8px);
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            width: fit-content;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            z-index: 3;
+        }
+        .star-icon {
+            width: 48px;
+            height: 48px;
+            color: #ffffff;
+            position: relative;
+            z-index: 3;
+            margin-bottom: 24px;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 3;
+            margin: auto 0;
+            padding: 16px 0;
+        }
+        .hero-title {
+            font-size: 2.75rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.035em;
+            color: #ffffff;
+            margin: 0 0 16px 0;
+        }
+        .hero-desc {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.88);
+            max-width: 380px;
+            margin: 0;
+            font-weight: 400;
+        }
+        .hero-footer {
+            font-size: 0.8125rem;
+            color: rgba(255, 255, 255, 0.55);
+            position: relative;
+            z-index: 3;
+        }
+        .geo-lines {
+            position: absolute;
+            top: -20%;
+            right: -30%;
+            width: 145%;
+            height: 140%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.35;
+        }
+        /* Right Content Panel */
+        .content-panel {
+            flex: 1 1 50%;
+            width: 50%;
+            background: #ffffff;
+            padding: 48px 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-sizing: border-box;
+            text-align: left;
+            position: relative;
+            z-index: 2;
+        }
+        .brand-name {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: #111827;
+            margin-bottom: 28px;
+        }
+        .headline {
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            color: #111827;
+            margin: 0 0 12px 0;
+            line-height: 1.2;
         }
         .message {
-            font-size: 0.9rem;
-            color: #a6aab0;
-            line-height: 1.5;
+            font-size: 0.95rem;
+            color: #4b5563;
+            line-height: 1.6;
             margin-bottom: 24px;
         }
         .target-app {
-            color: #2196f3;
-            font-weight: 500;
+            color: #2563eb;
+            font-weight: 600;
+            background: rgba(37, 99, 235, 0.08);
+            padding: 2px 8px;
+            border-radius: 4px;
         }
-        .btn {
-            display: block;
+        .btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100%;
-            background-color: #1976d2;
+            height: 48px;
+            background-color: #18181b;
             color: #ffffff;
             border: none;
-            border-radius: 4px;
-            padding: 10px 16px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: var(--font-sans);
             text-decoration: none;
             cursor: pointer;
-            transition: background-color 0.15s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+            transition: background-color 0.15s ease, transform 0.15s ease;
         }
-        .btn:hover {
-            background-color: #1565c0;
+        .btn-primary:hover {
+            background-color: #27272a;
+            transform: translateY(-1px);
         }
-        .links {
-            margin-top: 20px;
+        .secondary-links {
+            margin-top: 18px;
             display: flex;
-            justify-content: center;
-            gap: 16px;
-            font-size: 0.85rem;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 18px;
+            font-size: 0.875rem;
         }
-        .links a {
-            color: #2196f3;
+        .secondary-links a {
+            color: #4b5563;
             text-decoration: none;
+            font-weight: 500;
+            transition: color 0.15s ease;
         }
-        .links a:hover {
+        .secondary-links a:hover {
+            color: #111827;
             text-decoration: underline;
         }
-        .footer {
-            margin-top: 36px;
-            font-size: 0.75rem;
-            color: #6c7278;
+        .card-footer {
+            margin-top: 32px;
+            font-size: 0.775rem;
+            color: #9ca3af;
         }
-        .footer a {
-            color: #8c9096;
+        .card-footer a {
+            color: #6b7280;
             text-decoration: none;
         }
-        .footer a:hover {
+        .card-footer a:hover {
             text-decoration: underline;
+        }
+        @media (max-width: 768px) {
+            .error-card {
+                flex-direction: column;
+                min-height: auto;
+            }
+            .hero-panel, .content-panel {
+                width: 100%;
+                flex: 1 1 100%;
+                padding: 36px 28px;
+            }
+            .hero-panel {
+                min-height: 260px;
+            }
+            .hero-title {
+                font-size: 2.2rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    <div class="error-card">
+        <!-- Left Hero Panel -->
+        <div class="hero-panel">
+            <div class="hero-badge">
+                <span>404 Not Found</span>
+            </div>
+
+            <div class="hero-content">
+                <div class="star-icon">
+                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g stroke="#ffffff" stroke-width="7" stroke-linecap="round">
+                            <line x1="32" y1="10" x2="32" y2="54"/>
+                            <line x1="10" y1="32" x2="54" y2="32"/>
+                            <line x1="16.4" y1="16.4" x2="47.6" y2="47.6"/>
+                            <line x1="47.6" y1="16.4" x2="16.4" y2="47.6"/>
+                        </g>
+                    </svg>
+                </div>
+                <h1 class="hero-title">Lost in<br/>Space 🔍</h1>
+                <p class="hero-desc">The requested resource could not be found or has been moved to an alternate location.</p>
+            </div>
+
+            <div class="hero-footer">
+                &copy; 2026 Rohan Run Place. All rights reserved.
+            </div>
+
+            <svg class="geo-lines" viewBox="0 0 500 500" fill="none">
+                <rect x="140" y="40" width="320" height="420" rx="42" transform="rotate(20 140 40)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+                <rect x="175" y="70" width="300" height="390" rx="42" transform="rotate(24 175 70)" stroke="rgba(255,255,255,0.11)" stroke-width="1.5"/>
+                <rect x="210" y="100" width="280" height="360" rx="42" transform="rotate(28 210 100)" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
             </svg>
         </div>
 
-        <h1>Page Not Found</h1>
-        <p class="message">
-            The requested path could not be found on <span class="target-app" id="target-app">this application</span>.
-        </p>
+        <!-- Right Content Panel -->
+        <div class="content-panel">
+            <div class="brand-name">Rohan Run Place</div>
+            <h2 class="headline">Page Not Found</h2>
+            <p class="message">
+                The requested URL path does not exist on <span class="target-app" id="target-app">this application</span>. Please verify the URL or return to the application dashboard.
+            </p>
 
-        <a class="btn" href="https://auth.rohan.run.place/">Homelab Portal</a>
+            <a class="btn-primary" href="https://auth.rohan.run.place/">Homelab Portal</a>
 
-        <div class="links">
-            <a href="/">Service Root</a>
-            <a href="https://cockpit.rohan.run.place/">Cockpit</a>
-        </div>
+            <div class="secondary-links">
+                <a href="/">Service Root</a>
+                <span>&bull;</span>
+                <a href="https://cockpit.rohan.run.place/">Cockpit Status</a>
+            </div>
 
-        <div class="footer">
-            <span>Powered by Authelia &bull; <a href="mailto:admin@rohan.run.place">admin@rohan.run.place</a></span>
+            <div class="card-footer">
+                Powered by Authelia &bull; <a href="mailto:admin@rohan.run.place">admin@rohan.run.place</a>
+            </div>
         </div>
     </div>
 
     <script>
         const appMap = {
             'auth.rohan.run.place': 'Authelia SSO',
+            'browser.rohan.run.place': 'Cloud Browser',
             'user.rohan.run.place': 'LLDAP Directory',
             'users.rohan.run.place': 'LLDAP Directory',
             'mail.rohan.run.place': 'SnappyMail',
             'webmail.rohan.run.place': 'SnappyMail',
-            'mailpit.rohan.run.place': 'Mailpit',
-            'openhands.rohan.run.place': 'OpenHands',
-            'opencode.rohan.run.place': 'OpenCode',
-            'cockpit.rohan.run.place': 'Cockpit'
+            'mailpit.rohan.run.place': 'Mailpit Testing',
+            'openhands.rohan.run.place': 'OpenHands AI',
+            'opencode.rohan.run.place': 'OpenCode IDE',
+            'koel.rohan.run.place': 'Koel Music',
+            'cockpit.rohan.run.place': 'Cockpit Console'
         };
 
         const currentHost = window.location.hostname;
