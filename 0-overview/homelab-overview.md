@@ -16,6 +16,8 @@
 | `authelia-nginx` | `nginx:alpine` | 80/tcp, 443/tcp | Reverse proxy with TLS, Client Certs & SSO |
 | `authelia` | `authelia/authelia:latest` | 9091/tcp | Auth portal & OpenID Connect provider |
 | `openhands-app` | `docker.openhands.dev/openhands/openhands:1.8` | 100.72.142.64:3000 | AI coding assistant |
+| `browser-gateway` | `browser-browser-gateway` | 8080/tcp | Dynamic per-user Firefox browser gateway |
+| `squid` | `ubuntu/squid:latest` | 3128/tcp | Forward proxy for isolated browser sessions |
 
 ## Service Domain Mapping
 | Service | Domain | Port | Access |
@@ -27,6 +29,7 @@
 | Mailpit Inbox | `mail.rohan.run.place` | 443 | Behind SSO / Client Cert |
 | Webmail (SnappyMail) | `webmail.rohan.run.place` | 443 | Behind SSO / Client Cert |
 | Koel Music Server | koel.rohan.run.place | 443 | Hosted on micro-2 (Port 8000) |
+| Browser Session | `browser.rohan.run.place` | 443 | Isolated web browser workspace behind SSO |
 
 ## Documentation References
 - [email-and-smtp-guide.md](file:///home/ubuntu/Memory/email-and-smtp-guide.md) — Comprehensive SMTP & mailing guide

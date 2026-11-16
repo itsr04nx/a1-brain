@@ -16,7 +16,8 @@ The domain `rohan.run.place` resolves to the host's public IP dynamic IP address
 | `opencode.rohan.run.place` | OpenCode editor | A/HTTPS | Behind Authelia SSO |
 | `mail.rohan.run.place` | Mail service | A/HTTPS | Behind Authelia SSO |
 | `webmail.rohan.run.place` | SnappyMail webmail | A/HTTPS | Behind Authelia SSO |
-| koel.rohan.run.place | Koel Music Server (micro-2) | A/HTTPS | Native Auth |
+| `koel.rohan.run.place` | Koel Music Server (micro-2) | A/HTTPS | Native Auth / API |
+| `browser.rohan.run.place` | Browser Session Gateway | A/HTTPS | SSO-Gated per-user Firefox session |
 | `mailpit.rohan.run.place` (optional) | Mail testing | A/HTTPS | Internal use |
 
 ### DNSExit CLI Configuration

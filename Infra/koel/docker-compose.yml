@@ -1,0 +1,22 @@
+services:
+  koel:
+    image: phanan/koel:latest
+    container_name: koel
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    extra_hosts:
+      - "mail.rohan.run.place:100.72.142.64"
+    environment:
+      - FORCE_HTTPS=true
+      - TRUSTED_PROXIES=*
+    volumes:
+      - ./music:/music
+      - koel_storage:/var/www/html/storage
+      - ./.env:/var/www/html/.env
+      - ./IndexController.php:/var/www/html/app/Http/Controllers/IndexController.php:ro
+      - ./routes_api_base.php:/var/www/html/routes/api.base.php:ro
+      - ./routes-v7.php:/var/www/html/bootstrap/cache/routes-v7.php:rw
+
+volumes:
+  koel_storage:

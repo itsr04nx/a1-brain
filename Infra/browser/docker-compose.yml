@@ -1,0 +1,64 @@
+services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: docker-socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      POST: 1
+      NETWORKS: 1
+      VOLUMES: 1
+      IMAGES: 1
+      EXEC: 1
+      INFO: 1
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - control-net
+
+  browser-gateway:
+    build: ./gateway
+    container_name: browser-gateway
+    restart: unless-stopped
+    environment:
+      AUTHELIA_URL: http://authelia:9091
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
+      MAX_SESSIONS: "3"
+      FF_IMAGE: lscr.io/linuxserver/firefox:latest
+      NGINX_IP: "172.30.0.2"
+      GATEWAY_IP: "172.30.0.4"
+      PROFILES_DIR: /home/ubuntu/Workspace/browser/profiles
+      SQUID_USERS_DIR: /home/ubuntu/Workspace/browser/squid/users
+      DB_PATH: /data/gateway.db
+      IDLE_MINUTES: "20"
+      ALLOWED_GROUPS: "admins,apps-all,ai-dev-core,browser"
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      TZ: Asia/Kolkata
+    volumes:
+      - /home/ubuntu/Workspace/browser/profiles:/home/ubuntu/Workspace/browser/profiles
+      - /home/ubuntu/Workspace/browser/squid/users:/home/ubuntu/Workspace/browser/squid/users
+      - /home/ubuntu/Workspace/browser/data:/data
+    networks:
+      control-net:
+      browser-net:
+        ipv4_address: 172.30.0.4
+      authelia_default:
+    depends_on:
+      - docker-socket-proxy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  control-net:
+    external: true
+  browser-net:
+    external: true
+  browser-internal:
+    external: true
+  authelia_default:
+    external: true

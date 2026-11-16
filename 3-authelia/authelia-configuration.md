@@ -37,6 +37,7 @@
 - **Default Policy**: `deny`
 - **Rules**:
   - `auth.rohan.run.place` → `bypass` (public SSO entry)
+  - `browser.rohan.run.place` → `one_factor` (subject: `group:admins`, `group:apps-all`, `group:ai-dev-core`, `group:browser`)
   - `user.rohan.run.place`, `users.rohan.run.place` → `one_factor` (accessible to all authenticated users for self-service profile and password changes)
   - `mail.rohan.run.place`, `webmail.rohan.run.place` → `one_factor` (subject: `group:mail`, `group:admins`, `group:ai-dev-core`)
   - `opencode.rohan.run.place` → `one_factor` (subject: `group:opencode`, `group:admins`, `group:ai-dev-core`)
@@ -50,3 +51,12 @@
   - `403.html` (Access denied / Insufficient group permissions)
   - `404.html` (Service not found)
   - `50x.html` (Service unavailable / Bad gateway)
+
+
+### Frosted Glass SSO Theme & Portal Experience
+- **SSO Login Stage Redesign**: Custom injected theme via Nginx `portal.css` and `portal.js` in `/home/ubuntu/Workspace/authelia/nginx/portal/`:
+  - Frosted glassmorphism login card (`backdrop-filter: blur(28px)`, translucent borders, top edge highlight).
+  - Ambient dark mesh background (`#090d16` with radial blue/violet light orbs).
+  - Smart target-service indicator badge (`🌐 Browser Session`, `🎵 Koel`, etc.) dynamically parsed from the `rd` URL redirect parameter.
+  - Floating label inputs, modern toggle icons, and high-contrast royal blue gradient submit button (`#2563eb` -> `#1d4ed8`).
+  - Seamless full-screen Application Launcher portal for authenticated sessions.

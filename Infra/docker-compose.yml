@@ -29,6 +29,8 @@ services:
     image: nitnelave/lldap:latest
     container_name: lldap
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:3890:3890"
     expose:
       - "3890"
       - "17170"
@@ -57,21 +59,23 @@ services:
       - ./data/mailpit:/data
 
   mailserver:
-    image: mailserver/docker-mailserver:latest
+    image: mailserver/docker-mailserver:17.0.0
     container_name: mailserver
     hostname: mail.rohan.run.place
     restart: unless-stopped
     ports:
+      - "25:25"
       - "993:993"
       - "587:587"
       - "465:465"
     environment:
+      - POSTMASTER_ADDRESS=admin@rohan.run.place
       - ENABLE_AMAVIS=0
       - ENABLE_SPAMASSASSIN=0
       - ENABLE_CLAMAV=0
       - ENABLE_FAIL2BAN=1
       - ENABLE_POSTGREY=0
-      - ENABLE_OPENDKIM=0
+      - ENABLE_OPENDKIM=1
       - ENABLE_OPENDMARC=0
       - SPOOF_PROTECTION=0
       - SSL_TYPE=manual
@@ -84,10 +88,10 @@ services:
       - LDAP_SEARCH_BASE=ou=people,dc=rohan,dc=run,dc=place
       - LDAP_BIND_DN=uid=admin,ou=people,dc=rohan,dc=run,dc=place
       - LDAP_BIND_PW=__REDACTED__
-      - LDAP_QUERY_FILTER_USER=(&(objectClass=inetOrgPerson)(mail=%s))
-      - LDAP_QUERY_FILTER_GROUP=(&(objectClass=groupOfUniqueNames)(uid=%s))
-      - LDAP_QUERY_FILTER_ALIAS=(&(objectClass=inetOrgPerson)(mail=%s))
-      - LDAP_QUERY_FILTER_DOMAIN=(mail=*@%s)
+      - POSTFIX_USERS_QUERY_FILTER=(&(objectClass=inetOrgPerson)(mail=%s))
+      - POSTFIX_GROUPS_QUERY_FILTER=(&(objectClass=groupOfUniqueNames)(uid=%s))
+      - POSTFIX_ALIASES_QUERY_FILTER=(&(objectClass=inetOrgPerson)(mail=%s))
+      - POSTFIX_DOMAINS_QUERY_FILTER=(mail=*@%s)
       - DOVECOT_AUTH_BIND=yes
       - DOVECOT_USER_ATTRS=mail=user,=uid=5000,=gid=5000
       - DOVECOT_PASS_ATTRS=mail=user
@@ -129,9 +133,18 @@ services:
       - ./nginx/snippets:/etc/nginx/snippets:ro
       - ./nginx/mail-autoconfig:/usr/share/nginx/html/autoconfig:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/portal:/usr/share/nginx/html/portal:ro
+    networks:
+      default:
+      browser-net:
+        ipv4_address: 172.30.0.2
     depends_on:
       - authelia
       - lldap
       - mailpit
       - mailserver
       - snappymail
+
+networks:
+  browser-net:
+    external: true
