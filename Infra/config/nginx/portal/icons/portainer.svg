@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="p-blue1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#008FE6"/>
+      <stop offset="100%" stop-color="#006BB3"/>
+    </linearGradient>
+    <linearGradient id="p-blue2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#13BEF2"/>
+      <stop offset="100%" stop-color="#008FE6"/>
+    </linearGradient>
+    <linearGradient id="p-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#08385A"/>
+      <stop offset="100%" stop-color="#05243B"/>
+    </linearGradient>
+  </defs>
+  <!-- Background soft circle badge -->
+  <rect width="512" height="512" rx="128" fill="#0d1b2a"/>
+  <!-- Portainer 3D Blocks -->
+  <g transform="translate(66, 76)">
+    <!-- Top block -->
+    <path d="M190 20 L275 69 L190 118 L105 69 Z" fill="#20B6EC"/>
+    <path d="M105 69 L190 118 L190 195 L105 146 Z" fill="#008FE6"/>
+    <path d="M190 118 L275 69 L275 146 L190 195 Z" fill="#006BB3"/>
+
+    <!-- Bottom Left block -->
+    <path d="M105 170 L190 219 L105 268 L20 219 Z" fill="#20B6EC"/>
+    <path d="M20 219 L105 268 L105 345 L20 296 Z" fill="#008FE6"/>
+    <path d="M105 268 L190 219 L190 296 L105 345 Z" fill="#006BB3"/>
+
+    <!-- Bottom Right block -->
+    <path d="M275 170 L360 219 L275 268 L190 219 Z" fill="#20B6EC"/>
+    <path d="M190 219 L275 268 L275 345 L190 296 Z" fill="#008FE6"/>
+    <path d="M275 268 L360 219 L360 296 L275 345 Z" fill="#006BB3"/>
+  </g>
+</svg>

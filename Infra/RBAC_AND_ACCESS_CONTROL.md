@@ -65,13 +65,31 @@ access_control:
     - domain: auth.rohan.run.place
       policy: bypass
 
-    # 2. Application restricted to Admins only
+    # 2. Container Management Console (Portainer) restricted to Admins
+    - domain: portainer.rohan.run.place
+      policy: one_factor
+      subject:
+        - "group:admins"
+        - "group:portainer"
+
+    # 3. Cloud Browser Sessions restricted to Admins and Browser group
+    - domain: browser.rohan.run.place
+      policy: one_factor
+      subject:
+        - "group:admins"
+        - "group:apps-all"
+        - "group:ai-dev-core"
+        - "group:browser"
+
+    # 4. Application restricted to Admins only
     - domain:
         - user.rohan.run.place
         - mailpit.rohan.run.place
       policy: one_factor
       subject:
         - "group:admins"
+        - "group:mailpit"
+
 
     # 3. Application restricted to specific team (e.g., AI Developers)
     - domain: openhands.rohan.run.place

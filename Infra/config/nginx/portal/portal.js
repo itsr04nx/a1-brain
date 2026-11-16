@@ -60,6 +60,15 @@
       isAllowed: () => true
     },
     {
+      id: 'portainer',
+      name: 'Portainer',
+      url: 'https://portainer.rohan.run.place/',
+      subdomain: 'portainer.rohan.run.place',
+      category: 'Infrastructure',
+      logo: '/portal/icons/portainer.svg',
+      isAllowed: (u) => u.isAdmin || u.groups.includes('portainer')
+    },
+    {
       id: 'cockpit',
       name: 'Cockpit Console',
       url: 'https://cockpit.rohan.run.place/',
