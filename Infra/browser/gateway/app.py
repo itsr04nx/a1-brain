@@ -209,8 +209,9 @@ def write_policies(user: str) -> str:
     policies = {
         "policies": {
             "Proxy": {
-                "Mode": "pac_script",
-                "PACURL": "http://browser-gateway:8080/pac",
+                "Mode": "autoConfig",
+                "AutoConfigURL": "http://browser-gateway:8080/pac",
+                "UseProxyForDNS": True,
                 "Locked": True,
             },
             "DNSOverHTTPS": {"Enabled": False, "Locked": True},
@@ -238,6 +239,13 @@ def write_policies(user: str) -> str:
                 "Locked": True,
             },
             "Preferences": {
+                "network.proxy.type": {"Value": 2, "Status": "locked"},
+                "network.proxy.autoconfig_url": {
+                    "Value": "http://browser-gateway:8080/pac",
+                    "Status": "locked",
+                },
+                "network.proxy.socks_remote_dns": {"Value": True, "Status": "locked"},
+                "network.dns.disablePrefetch": {"Value": True, "Status": "locked"},
                 "network.trr.mode": {"Value": 5, "Status": "locked"},
                 "network.proxy.allow_hijacking_localhost": {"Value": False, "Status": "locked"},
                 "browser.startup.homepage": {
@@ -666,9 +674,9 @@ async def pac(request: Request):
   if (isPlainHostName(host)) return "DIRECT";
   if (host === "localhost" || host === "127.0.0.1" || host === "::1") return "DIRECT";
   if (shExpMatch(host, "*.internal")) return "DIRECT";
-  if (shExpMatch(host, "*.rohan.run.place")) return "DIRECT";
+  if (host === "rohan.run.place" || shExpMatch(host, "*.rohan.run.place")) return "DIRECT";
   if (/^10\\./.test(host) || /^192\\.168\\./.test(host) || /^172\\.(1[6-9]|2[0-9]|3[01])\\./.test(host)) return "DIRECT";
-  return "PROXY squid:3128";
+  return "PROXY 172.30.0.3:3128; PROXY squid:3128; DIRECT";
 }
 """
     return Response(
