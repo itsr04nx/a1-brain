@@ -1,132 +1,95 @@
 /* ==========================================================================
-   Rohan Homelab - Unified SSO & Portal Theme
-   Modern, Sleek, Frosted Glass & Borderless Design
+   SalesSkip Pixel-Perfect Split-Screen Login Theme & Homelab Portal
    ========================================================================== */
 
 :root {
-  --bg-base: #0b0f19;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bg-portal: #0f172a;
   --bg-surface: #1e293b;
   --bg-card: #1e293b;
   --bg-card-hover: #263349;
-  --bg-input: #1e293b;
-  --bg-input-focus: #243247;
   --accent-primary: #2563eb;
   --accent-hover: #1d4ed8;
-  --accent-glow: rgba(37, 99, 235, 0.4);
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
   --color-success: #22c55e;
   --color-danger: #ef4444;
   --color-danger-bg: rgba(239, 68, 68, 0.12);
-  --radius-xs: 4px;
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
 /* ==========================================================================
-   1. GLOBAL AUTHELIA THEME VARIABLE OVERRIDES
+   1. GLOBAL PAGE & AUTHELIA BASE OVERRIDES
    ========================================================================== */
-body, body[data-theme="dark"] {
-  background-color: var(--bg-base) !important;
-  color: var(--text-primary) !important;
-  font-family: var(--font-sans) !important;
-  -webkit-font-smoothing: antialiased !important;
+html, body {
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-sans) !important;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Base custom properties used by Authelia v4.39 Tailwind tokens */
-body[data-theme="dark"] {
-  --background: oklch(14% 0.02 260) !important;
-  --foreground: oklch(98% 0.01 260) !important;
-  --card: oklch(22% 0.03 260) !important;
-  --card-foreground: oklch(98% 0.01 260) !important;
-  --primary: oklch(58% 0.22 260) !important;
-  --primary-foreground: #ffffff !important;
-  --muted-foreground: oklch(72% 0.03 260) !important;
-  --border: rgba(255, 255, 255, 0.08) !important;
-  --input: rgba(148, 163, 184, 0.18) !important;
-  --ring: oklch(58% 0.22 260) !important;
-  --radius: 0.75rem !important;
+body, body[data-theme="dark"], body[data-theme="light"] {
+  background-color: #edf2f7 !important;
+  color: #111827 !important;
 }
 
 /* ==========================================================================
-   2. SSO LOGIN & 2FA STAGE REDESIGN
+   2. SPLIT-SCREEN CARD CONTAINER
    ========================================================================== */
 #first-factor-stage,
 #second-factor-stage {
   min-height: 100vh !important;
-  width: 100% !important;
+  width: 100vw !important;
   padding: 40px 16px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  position: relative !important;
-  background:
-    radial-gradient(circle at 50% 12%, rgba(37, 99, 235, 0.18) 0%, transparent 46%),
-    radial-gradient(circle at 85% 82%, rgba(99, 102, 241, 0.10) 0%, transparent 40%),
-    radial-gradient(circle at 15% 85%, rgba(14, 165, 233, 0.08) 0%, transparent 40%),
-    #090d16 !important;
+  background-color: #edf2f7 !important;
   box-sizing: border-box !important;
+  position: relative !important;
 }
 
-/* Ambient glow orb behind the card */
+/* Hide any previous background pseudo-elements */
 #first-factor-stage::before,
 #second-factor-stage::before {
-  content: "";
-  position: absolute;
-  top: 30%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 440px;
-  height: 280px;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.22) 0%, transparent 70%);
-  filter: blur(65px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Hide default plain Authelia logo & title in favor of rich custom header */
-#first-factor-stage .flex-col > .p-2,
-#first-factor-stage .flex-col > .w-full:has(h5),
-#second-factor-stage .flex-col > .p-2,
-#second-factor-stage .flex-col > .w-full:has(h5) {
   display: none !important;
 }
 
-/* The Main Card Container */
-#first-factor-stage > div.mx-auto,
-#second-factor-stage > div.mx-auto {
-  position: relative !important;
-  z-index: 1 !important;
-  background: rgba(22, 30, 46, 0.82) !important;
-  backdrop-filter: blur(28px) !important;
-  -webkit-backdrop-filter: blur(28px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.16) !important;
-  border-radius: var(--radius-xl) !important;
-  box-shadow:
-    0 25px 60px -15px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    0 0 45px -10px rgba(37, 99, 235, 0.28) !important;
-  padding: 38px 34px 30px 34px !important;
-  max-width: 440px !important;
-  width: 100% !important;
-  margin: auto !important;
-  box-sizing: border-box !important;
-  animation: ssoCardFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Hide default Authelia logo & h5/h6 titles */
+#first-factor-stage .flex-col > .p-2,
+#first-factor-stage .flex-col > .w-full:has(h5),
+#first-factor-stage .flex-col > .w-full:has(h6),
+#second-factor-stage .flex-col > .p-2,
+#second-factor-stage .flex-col > .w-full:has(h5),
+#second-factor-stage .flex-col > .w-full:has(h6) {
+  display: none !important;
 }
 
-@keyframes ssoCardFadeIn {
+/* The Main Split-Screen Card */
+#first-factor-stage > div.mx-auto,
+#second-factor-stage > div.mx-auto {
+  max-width: 1080px !important;
+  width: 92vw !important;
+  min-height: 640px !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.16), 0 0 1px rgba(0, 0, 0, 0.1) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardFadeIn {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.985);
+    transform: translateY(8px) scale(0.99);
   }
   to {
     opacity: 1;
@@ -135,316 +98,340 @@ body[data-theme="dark"] {
 }
 
 /* ==========================================================================
-   3. SSO BRAND HEADER & SERVICE INDICATOR (Injected by JS)
+   3. LEFT HERO PANEL (ROYAL BLUE)
    ========================================================================== */
-.sso-login-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  margin-bottom: 24px;
+.salesskip-hero-panel {
+  flex: 1 1 54% !important;
+  width: 54% !important;
+  min-height: 640px !important;
+  background: linear-gradient(145deg, #2837ea 0%, #1c25b8 55%, #151d95 100%) !important;
+  color: #ffffff !important;
+  padding: 56px 52px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  z-index: 1;
 }
 
-.sso-brand-badge {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Soft ambient shadow separating panels */
+.salesskip-hero-panel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -20px;
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 8-pointed Asterisk Star */
+.salesskip-star-icon {
+  width: 56px;
+  height: 56px;
   color: #ffffff;
-  box-shadow: 0 8px 24px -4px rgba(37, 99, 235, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.3);
-  margin-bottom: 14px;
-  transition: transform 0.2s ease;
+  position: relative;
+  z-index: 3;
 }
 
-.sso-brand-badge:hover {
-  transform: scale(1.04);
+.salesskip-star-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
-.sso-brand-badge svg {
-  width: 28px;
-  height: 28px;
+.salesskip-hero-content {
+  position: relative;
+  z-index: 3;
+  margin: auto 0;
+  padding: 24px 0;
 }
 
-.sso-main-title {
-  font-size: 1.45rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  color: #f8fafc;
-  margin: 0 0 8px 0;
+.salesskip-hero-title {
+  font-size: 3.25rem !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.035em !important;
+  color: #ffffff !important;
+  margin: 0 0 20px 0 !important;
 }
 
-.sso-target-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 5px 12px;
-  margin-bottom: 8px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #94a3b8;
-  transition: all 0.2s ease;
-}
-
-.sso-target-indicator.highlight {
-  background: rgba(37, 99, 235, 0.15);
-  border-color: rgba(59, 130, 246, 0.35);
-  color: #93c5fd;
-}
-
-.sso-pulse-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background-color: #22c55e;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+.salesskip-hero-title .wave-emoji {
   display: inline-block;
-  animation: ssoPulse 2s infinite ease-in-out;
+  font-style: normal;
+  transform-origin: 70% 70%;
+  animation: waveAnimation 2.2s infinite ease-in-out;
 }
 
-@keyframes ssoPulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(0.85);
-  }
+@keyframes waveAnimation {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
 }
 
-.sso-sub-caption {
-  font-size: 0.8125rem;
-  color: #64748b;
-  margin: 0;
+.salesskip-hero-desc {
+  font-size: 1.05rem !important;
+  line-height: 1.6 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  max-width: 420px !important;
+  margin: 0 !important;
+  font-weight: 400 !important;
+}
+
+.salesskip-hero-footer {
+  font-size: 0.85rem !important;
+  color: rgba(255, 255, 255, 0.55) !important;
+  position: relative;
+  z-index: 3;
+}
+
+/* Geometric curved wireframes in background */
+.salesskip-geo-lines {
+  position: absolute;
+  top: -15%;
+  right: -30%;
+  width: 145%;
+  height: 140%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.35;
 }
 
 /* ==========================================================================
-   4. FORM CONTROLS & INPUTS
+   4. RIGHT FORM PANEL (CLEAN WHITE)
    ========================================================================== */
+#first-factor-stage .flex-col.items-stretch,
+#second-factor-stage .flex-col.items-stretch {
+  flex: 1 1 46% !important;
+  width: 46% !important;
+  background: #ffffff !important;
+  padding: 56px 52px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  text-align: left !important;
+  position: relative !important;
+  z-index: 2;
+}
+
+/* Top brand logo */
+.salesskip-right-brand {
+  font-size: 1.65rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+  color: #111827 !important;
+  margin-bottom: 38px !important;
+  text-align: left !important;
+}
+
+/* Welcome Back header */
+.salesskip-welcome-wrap {
+  margin-bottom: 24px !important;
+  text-align: left !important;
+}
+
+.salesskip-welcome-title {
+  font-size: 1.85rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+  color: #111827 !important;
+  margin: 0 0 8px 0 !important;
+  line-height: 1.2 !important;
+}
+
+.salesskip-welcome-sub {
+  font-size: 0.8125rem !important;
+  color: #6b7280 !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+}
+
+.salesskip-link {
+  color: #111827 !important;
+  font-weight: 600 !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+}
+
+/* Form container */
 #form-login {
   width: 100% !important;
 }
 
+#form-login .grid {
+  gap: 16px !important;
+}
+
+/* Inputs styled cleanly like the image */
 #form-login input[data-slot="floating-input"],
 #username-textfield,
 #password-textfield {
-  background-color: rgba(15, 23, 42, 0.75) !important;
-  border: 1px solid rgba(148, 163, 184, 0.18) !important;
-  border-radius: var(--radius-md) !important;
-  color: #f8fafc !important;
+  background-color: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  border-bottom: 2px solid #111827 !important;
+  border-radius: 6px 6px 0 0 !important;
+  color: #111827 !important;
   font-size: 0.95rem !important;
-  height: 54px !important;
-  padding: 18px 14px 6px 14px !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-weight: 500 !important;
+  height: 50px !important;
+  padding: 16px 14px 4px 14px !important;
+  transition: all 0.15s ease !important;
   outline: none !important;
-}
-
-#form-login input[data-slot="floating-input"]:hover,
-#username-textfield:hover,
-#password-textfield:hover {
-  border-color: rgba(148, 163, 184, 0.32) !important;
+  box-shadow: none !important;
 }
 
 #form-login input[data-slot="floating-input"]:focus,
 #username-textfield:focus,
 #password-textfield:focus {
-  background-color: rgba(15, 23, 42, 0.95) !important;
-  border-color: #3b82f6 !important;
-  box-shadow:
-    0 0 0 3px rgba(59, 130, 246, 0.24),
-    0 0 16px rgba(59, 130, 246, 0.18) !important;
+  background-color: #ffffff !important;
+  border-color: #d1d5db !important;
+  border-bottom: 2.5px solid #111827 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
 }
 
-/* Floating label styling */
 #form-login label {
-  color: #94a3b8 !important;
-  font-size: 0.85rem !important;
+  color: #9ca3af !important;
+  font-size: 0.825rem !important;
   font-weight: 500 !important;
-  letter-spacing: 0.01em !important;
-  transition: all 0.2s ease !important;
 }
 
 #form-login input:focus ~ label,
 #form-login input:not(:placeholder-shown) ~ label {
-  color: #60a5fa !important;
+  color: #111827 !important;
+  font-weight: 600 !important;
 }
 
-/* Password toggle button */
+/* Password visibility toggle icon */
 button[aria-label*="password" i],
 button[aria-label*="toggle" i] {
-  color: #94a3b8 !important;
-  transition: color 0.15s ease !important;
+  color: #6b7280 !important;
 }
 
-button[aria-label*="password" i]:hover,
-button[aria-label*="toggle" i]:hover {
-  color: #f8fafc !important;
-}
-
-/* Checkbox (Remember me) */
-#remember-checkbox {
-  width: 18px !important;
-  height: 18px !important;
-  border-radius: 5px !important;
-  border: 1.5px solid rgba(148, 163, 184, 0.35) !important;
-  background-color: rgba(15, 23, 42, 0.7) !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease !important;
-}
-
-#remember-checkbox[data-state="checked"] {
-  background-color: #2563eb !important;
-  border-color: #2563eb !important;
-}
-
-label[for="remember-checkbox"] {
-  color: #cbd5e1 !important;
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  user-select: none !important;
-}
-
-/* Reset password link */
-#reset-password-button {
-  color: #60a5fa !important;
-  font-size: 0.825rem !important;
-  font-weight: 500 !important;
-  background: transparent !important;
-  border: none !important;
-  cursor: pointer !important;
-  transition: color 0.15s ease !important;
-}
-
-#reset-password-button:hover {
-  color: #93c5fd !important;
-  text-decoration: underline !important;
-}
-
-/* Primary Sign In Button */
+/* Primary "Login Now" button */
 #sign-in-button {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
-  border-radius: var(--radius-md) !important;
+  background: #18181b !important;
+  border: none !important;
+  border-radius: 8px !important;
   color: #ffffff !important;
   font-weight: 600 !important;
-  font-size: 0.975rem !important;
+  font-size: 0.95rem !important;
   height: 48px !important;
-  letter-spacing: 0.015em !important;
-  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.42) !important;
+  width: 100% !important;
+  margin-top: 10px !important;
   cursor: pointer !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+  transition: background-color 0.15s ease, transform 0.15s ease !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 100% !important;
 }
 
 #sign-in-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
-  box-shadow: 0 6px 24px rgba(37, 99, 235, 0.6) !important;
-  transform: translateY(-1.5px) !important;
+  background: #27272a !important;
+  transform: translateY(-1px) !important;
 }
 
 #sign-in-button:active:not(:disabled) {
   transform: translateY(0) !important;
-  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4) !important;
 }
 
-#sign-in-button:disabled {
-  opacity: 0.65 !important;
-  cursor: not-allowed !important;
+/* Secondary "Login with Google" button */
+.salesskip-google-btn {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  color: #111827 !important;
+  font-weight: 600 !important;
+  font-size: 0.925rem !important;
+  height: 48px !important;
+  width: 100% !important;
+  margin-top: 12px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
 }
 
-/* Error & Warning Alert styling */
-div[variant="warning"],
-div[variant="destructive"],
-.border-destructive {
-  border-radius: var(--radius-md) !important;
-  background: rgba(239, 68, 68, 0.14) !important;
-  border: 1px solid rgba(239, 68, 68, 0.35) !important;
-  color: #fca5a5 !important;
-  backdrop-filter: blur(8px) !important;
-  font-size: 0.85rem !important;
-  padding: 10px 14px !important;
+.salesskip-google-btn:hover {
+  background: #f9fafb !important;
+  border-color: #d1d5db !important;
 }
 
-/* ==========================================================================
-   5. SSO LOGIN FOOTER & SERVICE PILLS (Injected by JS)
-   ========================================================================== */
-.sso-login-footer {
-  margin-top: 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
+.salesskip-google-icon {
+  width: 18px !important;
+  height: 18px !important;
 }
 
-.sso-services-pills {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex-wrap: wrap;
+/* Forget password link */
+.salesskip-forget-wrap {
+  margin-top: 22px !important;
+  text-align: center !important;
+  font-size: 0.825rem !important;
+  color: #6b7280 !important;
 }
 
-.sso-pill {
-  font-size: 0.725rem;
-  font-weight: 500;
-  color: #94a3b8;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 4px 10px;
-  border-radius: 12px;
-  transition: all 0.15s ease;
-  user-select: none;
-}
-
-.sso-pill.active {
-  color: #60a5fa;
-  background: rgba(37, 99, 235, 0.18);
-  border-color: rgba(59, 130, 246, 0.35);
-  font-weight: 600;
-}
-
-.sso-security-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.725rem;
-  color: #64748b;
-}
-
-.sso-security-badge svg {
-  width: 13px;
-  height: 13px;
-  color: #10b981;
-}
-
-/* Discretely style the Authelia default powered-by block */
-#first-factor-stage a[href*="authelia"],
-#second-factor-stage a[href*="authelia"] {
-  color: #64748b !important;
-  font-size: 0.7rem !important;
-  text-decoration: none !important;
-  transition: color 0.15s ease !important;
-}
-
-#first-factor-stage a[href*="authelia"]:hover,
-#second-factor-stage a[href*="authelia"]:hover {
-  color: #94a3b8 !important;
+.salesskip-click-here {
+  color: #111827 !important;
+  font-weight: 600 !important;
   text-decoration: underline !important;
+  cursor: pointer !important;
+  margin-left: 4px !important;
+}
+
+/* Hide original Reset password button from normal layout */
+#reset-password-button {
+  display: none !important;
+}
+
+/* Hide Powered by Authelia link on login stage */
+#first-factor-stage .flex.items-center.justify-center.gap-2.w-full,
+#second-factor-stage .flex.items-center.justify-center.gap-2.w-full {
+  display: none !important;
+}
+
+/* Responsive Stacking */
+@media (max-width: 860px) {
+  #first-factor-stage > div.mx-auto,
+  #second-factor-stage > div.mx-auto {
+    flex-direction: column !important;
+    max-width: 480px !important;
+    width: 95vw !important;
+    min-height: auto !important;
+  }
+  .salesskip-hero-panel {
+    width: 100% !important;
+    flex: none !important;
+    min-height: auto !important;
+    padding: 36px 28px !important;
+  }
+  .salesskip-hero-title {
+    font-size: 2.2rem !important;
+  }
+  .salesskip-hero-desc {
+    font-size: 0.95rem !important;
+  }
+  #first-factor-stage .flex-col.items-stretch,
+  #second-factor-stage .flex-col.items-stretch {
+    width: 100% !important;
+    flex: none !important;
+    padding: 36px 28px !important;
+  }
 }
 
 /* ==========================================================================
-   6. HOMELAB APPLICATION LAUNCHER PORTAL (FOR AUTHENTICATED USERS)
+   5. HOMELAB APPLICATION LAUNCHER PORTAL (FOR AUTHENTICATED USERS)
    ========================================================================== */
 #rohan-homelab-portal {
   position: fixed;
@@ -453,7 +440,7 @@ div[variant="destructive"],
   width: 100vw;
   height: 100vh;
   overflow-y: auto;
-  background-color: var(--bg-base);
+  background-color: var(--bg-portal);
   color: var(--text-primary);
   font-family: var(--font-sans);
   box-sizing: border-box;
@@ -470,7 +457,6 @@ div[variant="destructive"],
   outline: none;
 }
 
-/* Header Navbar */
 .portal-navbar {
   position: sticky;
   top: 0;
@@ -540,7 +526,7 @@ div[variant="destructive"],
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: var(--bg-base);
+  background-color: var(--bg-portal);
   padding: 5px 12px 5px 8px;
   border-radius: var(--radius-sm);
   border: none !important;
@@ -549,7 +535,7 @@ div[variant="destructive"],
 .user-avatar-bubble {
   width: 26px;
   height: 26px;
-  border-radius: var(--radius-xs);
+  border-radius: 4px;
   background-color: var(--accent-primary);
   display: flex;
   align-items: center;
@@ -601,14 +587,12 @@ div[variant="destructive"],
   color: #ffffff;
 }
 
-/* Main Content Container */
 .portal-content {
   max-width: 1160px;
   margin: 36px auto 0 auto;
   padding: 0 24px;
 }
 
-/* Search and Filters Controls */
 .portal-controls {
   display: flex;
   align-items: center;
@@ -631,7 +615,7 @@ div[variant="destructive"],
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   width: 16px;
   height: 16px;
   pointer-events: none;
@@ -639,7 +623,7 @@ div[variant="destructive"],
 
 .portal-search-input {
   width: 100%;
-  background-color: var(--bg-input);
+  background-color: var(--bg-surface);
   border-radius: var(--radius-sm);
   padding: 10px 14px 10px 38px;
   font-size: 0.85rem;
@@ -647,15 +631,6 @@ div[variant="destructive"],
   font-family: var(--font-sans);
   border: none !important;
   outline: none !important;
-  transition: background-color 0.15s ease;
-}
-
-.portal-search-input:focus {
-  background-color: var(--bg-input-focus);
-}
-
-.portal-search-input::placeholder {
-  color: var(--text-tertiary);
 }
 
 .category-filter-group {
@@ -674,7 +649,6 @@ div[variant="destructive"],
   padding: 7px 14px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background-color 0.12s ease, color 0.12s ease;
 }
 
 .category-filter-btn:hover {
@@ -687,14 +661,12 @@ div[variant="destructive"],
   color: #ffffff;
 }
 
-/* App Grid */
 .portal-app-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 18px;
 }
 
-/* App Card - Borderless, Large Logo & Large Name */
 .app-card {
   position: relative;
   background-color: var(--bg-card);
@@ -719,7 +691,7 @@ div[variant="destructive"],
   width: 68px;
   height: 68px;
   border-radius: var(--radius-sm);
-  background-color: var(--bg-base);
+  background-color: var(--bg-portal);
   border: none !important;
   display: flex;
   align-items: center;
@@ -748,68 +720,11 @@ div[variant="destructive"],
   color: var(--text-primary);
   margin: 0;
   letter-spacing: -0.015em;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* Empty search state */
 .portal-empty-search {
   grid-column: 1 / -1;
   text-align: center;
   padding: 48px 20px;
   color: var(--text-secondary);
-}
-
-.portal-empty-search h3 {
-  font-size: 1.1rem;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-}
-
-.portal-empty-search p {
-  font-size: 0.85rem;
-  margin: 0;
-}
-
-@media (max-width: 640px) {
-  #first-factor-stage > div.mx-auto,
-  #second-factor-stage > div.mx-auto {
-    padding: 28px 20px !important;
-    border-radius: var(--radius-lg) !important;
-  }
-  .portal-navbar {
-    padding: 12px 16px;
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-  .portal-user-section {
-    justify-content: space-between;
-  }
-  .portal-content {
-    margin-top: 20px;
-    padding: 0 16px;
-  }
-  .portal-app-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .app-card {
-    padding: 18px 20px;
-    gap: 16px;
-  }
-  .app-icon-wrapper {
-    width: 60px;
-    height: 60px;
-    padding: 6px;
-  }
-  .app-real-logo {
-    width: 46px;
-    height: 46px;
-  }
-  .app-name {
-    font-size: 1.2rem;
-  }
 }

@@ -263,9 +263,7 @@ def render_squid_acl(user: str, ip: str) -> bool:
     body = (
         f"# managed by browser-gateway for {user}\n"
         f"acl u_{user} src {ip}\n"
-        f"acl u_{user}_domains dstdomain {DEFAULT_ALLOW_DOMAINS}\n"
-        f"http_access allow u_{user} u_{user}_domains\n"
-        f"http_access deny u_{user}\n"
+        f"http_access allow u_{user}\n"
     )
     changed = True
     if os.path.exists(path):

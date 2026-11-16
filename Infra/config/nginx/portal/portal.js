@@ -1,4 +1,4 @@
-// Rohan Homelab Application Launcher & SSO Experience
+// Rohan Homelab Application Launcher & SalesSkip SSO Experience
 (function () {
   'use strict';
 
@@ -97,148 +97,135 @@
     }
   }
 
-  function getTargetServiceInfo() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const rd = urlParams.get('rd') || '';
-    const rdLower = rd.toLowerCase();
-
-    if (rdLower.includes('browser.')) {
-      return {
-        name: 'Browser Session',
-        badge: 'browser.run.place',
-        icon: '🌐',
-        isSpecific: true,
-        desc: 'Sign in to access your isolated browser workspace'
-      };
-    } else if (rdLower.includes('koel.')) {
-      return {
-        name: 'Koel Music Player',
-        badge: 'koel.rohan.run.place',
-        icon: '🎵',
-        isSpecific: true,
-        desc: 'Sign in to access your streaming music library'
-      };
-    } else if (rdLower.includes('openhands.')) {
-      return {
-        name: 'OpenHands AI Workspace',
-        badge: 'openhands.rohan.run.place',
-        icon: '🤖',
-        isSpecific: true,
-        desc: 'Sign in to access your autonomous AI agents'
-      };
-    } else if (rdLower.includes('opencode.')) {
-      return {
-        name: 'OpenCode Web IDE',
-        badge: 'opencode.rohan.run.place',
-        icon: '💻',
-        isSpecific: true,
-        desc: 'Sign in to access your cloud development environment'
-      };
-    } else if (rdLower.includes('mail.') || rdLower.includes('webmail.')) {
-      return {
-        name: 'SnappyMail Webmail',
-        badge: 'mail.rohan.run.place',
-        icon: '📬',
-        isSpecific: true,
-        desc: 'Sign in to access your email account'
-      };
-    } else if (rdLower.includes('cockpit.')) {
-      return {
-        name: 'Cockpit Console',
-        badge: 'cockpit.rohan.run.place',
-        icon: '🖥️',
-        isSpecific: true,
-        desc: 'Sign in to manage server infrastructure'
-      };
-    } else if (rdLower.includes('user.') || rdLower.includes('users.')) {
-      return {
-        name: 'User Directory',
-        badge: 'user.rohan.run.place',
-        icon: '👤',
-        isSpecific: true,
-        desc: 'Sign in to manage account settings and passwords'
-      };
-    }
-
-    return {
-      name: 'Rohan Homelab SSO',
-      badge: 'auth.rohan.run.place',
-      icon: '✨',
-      isSpecific: false,
-      desc: 'Enter your credentials to unlock all homelab services'
-    };
-  }
-
   function enhanceLoginPage() {
     const stage = document.getElementById('first-factor-stage') || document.getElementById('second-factor-stage');
     if (!stage) return;
 
-    // Hide original logo and titles
-    const defaultLogo = stage.querySelector('.w-full.p-2');
-    if (defaultLogo) defaultLogo.style.display = 'none';
+    const cardContainer = stage.querySelector('.mx-auto.w-full');
+    if (!cardContainer) return;
 
-    const defaultTitle = stage.querySelector('h5')?.closest('.w-full');
-    if (defaultTitle) defaultTitle.style.display = 'none';
-
-    const defaultSubtitle = stage.querySelector('h6')?.closest('.w-full');
-    if (defaultSubtitle) defaultSubtitle.style.display = 'none';
-
-    const targetService = getTargetServiceInfo();
-
-    // Inject Custom SSO Header if not already present
-    if (!document.getElementById('sso-login-header')) {
-      const header = document.createElement('div');
-      header.id = 'sso-login-header';
-      header.className = 'sso-login-header';
-      header.innerHTML = `
-        <div class="sso-brand-badge" title="Rohan Homelab Secure Single Sign-On">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <path d="M9 12l2 2 4-4"/>
+    // 1. Prepend Left Blue Hero Panel if not present
+    if (!document.getElementById('salesskip-hero-panel')) {
+      const heroPanel = document.createElement('div');
+      heroPanel.id = 'salesskip-hero-panel';
+      heroPanel.className = 'salesskip-hero-panel';
+      heroPanel.innerHTML = `
+        <div class="salesskip-star-icon">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#ffffff" stroke-width="7" stroke-linecap="round">
+              <line x1="32" y1="10" x2="32" y2="54"/>
+              <line x1="10" y1="32" x2="54" y2="32"/>
+              <line x1="16.4" y1="16.4" x2="47.6" y2="47.6"/>
+              <line x1="47.6" y1="16.4" x2="16.4" y2="47.6"/>
+            </g>
           </svg>
         </div>
-        <h1 class="sso-main-title">Rohan Homelab</h1>
-        <div class="sso-target-indicator ${targetService.isSpecific ? 'highlight' : ''}">
-          <span class="sso-pulse-dot"></span>
-          <span class="sso-target-label">${targetService.icon} ${escapeHtml(targetService.name)}</span>
-        </div>
-        <p class="sso-sub-caption">${escapeHtml(targetService.desc)}</p>
-      `;
 
-      const form = stage.querySelector('#form-login') || stage.querySelector('form') || stage.querySelector('.mt-2.py-2');
-      if (form && form.parentNode) {
-        form.parentNode.insertBefore(header, form);
+        <div class="salesskip-hero-content">
+          <h1 class="salesskip-hero-title">
+            Hello<br/>SalesSkip! <span class="wave-emoji">👋</span>
+          </h1>
+          <p class="salesskip-hero-desc">
+            Skip repetitive and manual sales-marketing tasks. Get highly productive through automation and save tons of time!
+          </p>
+        </div>
+
+        <div class="salesskip-hero-footer">
+          © 2022 SalesSkip. All rights reserved.
+        </div>
+
+        <!-- Concentric geometric curved wireframes in background -->
+        <svg class="salesskip-geo-lines" viewBox="0 0 500 500" fill="none">
+          <rect x="140" y="40" width="320" height="420" rx="42" transform="rotate(20 140 40)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+          <rect x="175" y="70" width="300" height="390" rx="42" transform="rotate(24 175 70)" stroke="rgba(255,255,255,0.11)" stroke-width="1.5"/>
+          <rect x="210" y="100" width="280" height="360" rx="42" transform="rotate(28 210 100)" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+          <rect x="245" y="130" width="260" height="330" rx="42" transform="rotate(32 245 130)" stroke="rgba(255,255,255,0.05)" stroke-width="1.5"/>
+        </svg>
+      `;
+      cardContainer.insertBefore(heroPanel, cardContainer.firstChild);
+    }
+
+    // 2. Insert Right Panel Header above form
+    const form = stage.querySelector('#form-login') || stage.querySelector('form');
+    if (form && !document.getElementById('salesskip-right-header')) {
+      const rightHeader = document.createElement('div');
+      rightHeader.id = 'salesskip-right-header';
+      rightHeader.innerHTML = `
+        <div class="salesskip-right-brand">SalesSkip</div>
+        <div class="salesskip-welcome-wrap">
+          <h2 class="salesskip-welcome-title">Welcome Back!</h2>
+          <p class="salesskip-welcome-sub">
+            Don't have an account? <span class="salesskip-link" id="salesskip-create-btn">Create a new account now</span>, it's FREE! Takes less than a minute.
+          </p>
+        </div>
+      `;
+      form.parentNode.insertBefore(rightHeader, form);
+
+      const createBtn = document.getElementById('salesskip-create-btn');
+      if (createBtn) {
+        createBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.location.href = 'https://user.rohan.run.place/';
+        });
       }
     }
 
-    // Inject Custom SSO Footer if not already present
-    if (!document.getElementById('sso-login-footer')) {
-      const footer = document.createElement('div');
-      footer.id = 'sso-login-footer';
-      footer.className = 'sso-login-footer';
-      const urlParams = new URLSearchParams(window.location.search);
-      const rdLower = (urlParams.get('rd') || '').toLowerCase();
+    // 3. Customize Primary Button Text to "Login Now"
+    const signInBtn = stage.querySelector('#sign-in-button');
+    if (signInBtn) {
+      if (signInBtn.childNodes && signInBtn.childNodes.length > 0) {
+        for (let i = 0; i < signInBtn.childNodes.length; i++) {
+          if (signInBtn.childNodes[i].nodeType === Node.TEXT_NODE) {
+            signInBtn.childNodes[i].nodeValue = 'Login Now';
+            break;
+          }
+        }
+      }
+    }
 
-      footer.innerHTML = `
-        <div class="sso-services-pills">
-          <span class="sso-pill ${rdLower.includes('browser') ? 'active' : ''}">🌐 Browser</span>
-          <span class="sso-pill ${rdLower.includes('koel') ? 'active' : ''}">🎵 Koel</span>
-          <span class="sso-pill ${rdLower.includes('openhands') ? 'active' : ''}">🤖 AI</span>
-          <span class="sso-pill ${rdLower.includes('mail') ? 'active' : ''}">📬 Mail</span>
-          <span class="sso-pill ${rdLower.includes('opencode') ? 'active' : ''}">💻 IDE</span>
-        </div>
-        <div class="sso-security-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    // 4. Insert Google Login Button & "Forget password? Click here"
+    if (form && !document.getElementById('salesskip-footer-links')) {
+      const footerLinks = document.createElement('div');
+      footerLinks.id = 'salesskip-footer-links';
+      footerLinks.innerHTML = `
+        <button type="button" class="salesskip-google-btn" id="salesskip-google-btn">
+          <svg class="salesskip-google-icon" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
           </svg>
-          <span>End-to-End Encrypted Session • Rohan Homelab</span>
+          Login with Google
+        </button>
+        <div class="salesskip-forget-wrap">
+          Forget password? <span class="salesskip-click-here" id="salesskip-forget-link">Click here</span>
         </div>
       `;
+      form.parentNode.appendChild(footerLinks);
 
-      const form = stage.querySelector('#form-login') || stage.querySelector('form') || stage.querySelector('.mt-2.py-2');
-      if (form && form.parentNode) {
-        form.parentNode.appendChild(footer);
+      const forgetLink = document.getElementById('salesskip-forget-link');
+      if (forgetLink) {
+        forgetLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          const origReset = document.getElementById('reset-password-button');
+          if (origReset) {
+            origReset.click();
+          } else {
+            window.location.href = '/reset-password/step1';
+          }
+        });
+      }
+
+      const googleBtn = document.getElementById('salesskip-google-btn');
+      if (googleBtn) {
+        googleBtn.addEventListener('click', () => {
+          const passkeyBtn = document.querySelector('button[id*="passkey"]');
+          if (passkeyBtn) {
+            passkeyBtn.click();
+          } else {
+            signInBtn?.click();
+          }
+        });
       }
     }
   }
@@ -416,12 +403,12 @@
       // Observe DOM with throttled session check
       let isCheckingSession = false;
       const observer = new MutationObserver(async () => {
-        // Only run enhanceLoginPage if header is not yet present
-        if (!document.getElementById('sso-login-header')) {
+        // Run enhanceLoginPage if hero panel is not yet present
+        if (!document.getElementById('salesskip-hero-panel')) {
           enhanceLoginPage();
         }
 
-        // Only check session when authenticated view arrives
+        // Only check session when authenticated stage arrives
         const root = document.getElementById('root');
         if (root && root.querySelector('#authenticated-stage') && !isCheckingSession) {
           isCheckingSession = true;
