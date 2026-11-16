@@ -393,6 +393,76 @@ button[aria-label*="toggle" i] {
   color: #6b7280 !important;
 }
 
+/* ==========================================================================
+   Remember Me Checkbox & Label (High-Visibility Modern Style)
+   ========================================================================== */
+#first-factor-stage div:has(> #remember-checkbox),
+#first-factor-stage div:has(> * > #remember-checkbox),
+.flex-row:has(#remember-checkbox) {
+  margin: 12px 0 16px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+#remember-checkbox,
+button[data-slot="checkbox"]#remember-checkbox {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  border: 2px solid #64748b !important;
+  border-radius: 5px !important;
+  background-color: #ffffff !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+  outline: none !important;
+  padding: 0 !important;
+}
+
+#remember-checkbox:hover,
+button[data-slot="checkbox"]#remember-checkbox:hover {
+  border-color: #18181b !important;
+  background-color: #f8fafc !important;
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.1) !important;
+}
+
+#remember-checkbox[aria-checked="true"],
+#remember-checkbox[data-checked],
+button[data-slot="checkbox"]#remember-checkbox[aria-checked="true"],
+button[data-slot="checkbox"]#remember-checkbox[data-checked] {
+  background-color: #18181b !important;
+  border-color: #18181b !important;
+  color: #ffffff !important;
+}
+
+#remember-checkbox [data-slot="checkbox-indicator"],
+#remember-checkbox svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  stroke-width: 3 !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+label[for="remember-checkbox"] {
+  color: #1e293b !important;
+  font-size: 0.925rem !important;
+  font-weight: 500 !important;
+  font-family: var(--font-sans) !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  margin-left: 8px !important;
+  transition: color 0.15s ease !important;
+}
+
+label[for="remember-checkbox"]:hover {
+  color: #000000 !important;
+}
+
 /* Primary Action Buttons (#sign-in-button, #reset-button) */
 #sign-in-button,
 #reset-button {

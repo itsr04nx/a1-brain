@@ -130,9 +130,6 @@
           <h1 class="salesskip-hero-title">
             Hello<br/>${BRAND_NAME}! <span class="wave-emoji">👋</span>
           </h1>
-          <p class="salesskip-hero-desc">
-            Skip repetitive and manual tasks. Get highly productive through automated workflows, cloud browser sessions, and save tons of time!
-          </p>
         </div>
 
         <div class="salesskip-hero-footer">
