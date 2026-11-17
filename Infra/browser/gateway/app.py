@@ -89,6 +89,7 @@ PUBLIC_HOSTS = [
     "cockpit.rohan.run.place",
     "portainer.rohan.run.place",
     "goto.rohan.run.place",
+    "firewall.rohan.run.place",
 ]
 
 DEFAULT_SHORT_NAMES = [
@@ -106,6 +107,7 @@ DEFAULT_SHORT_NAMES = [
     "browser",
     "goto",
     "go",
+    "firewall",
 ]
 
 EXTRA_HOSTS = {h: NGINX_IP for h in PUBLIC_HOSTS + DEFAULT_SHORT_NAMES}
@@ -126,6 +128,7 @@ DEFAULT_GOTOS = [
     ("browser", "https://browser.rohan.run.place/", "Cloud Browser", "SSO-gated isolated Linux cloud browser sessions", "Workspaces", "globe", 1),
     ("goto", "http://browser-gateway:8080/gotos", "In-House DNS", "Firm-wide short names & DNS gotos manager", "Network", "compass", 1),
     ("go", "http://browser-gateway:8080/gotos", "In-House DNS", "Firm-wide short names & DNS gotos manager", "Network", "compass", 1),
+    ("firewall", "https://firewall.rohan.run.place/", "Firewall & Traffic Limiter", "AdGuard Home DNS firewall, query inspector & Squid traffic control", "Infrastructure", "shield", 1),
 ]
 
 _client: Optional[docker.DockerClient] = None
@@ -250,7 +253,7 @@ def resolve_internal_ip(qname: str) -> Optional[str]:
 
 class DnsHandler:
     def __init__(self):
-        self.upstream_servers = ["1.1.1.1", "8.8.8.8"]
+        self.upstream_servers = ["172.30.0.5", "1.1.1.1"]
 
     async def handle_query_bytes(self, data: bytes) -> bytes:
         try:
@@ -541,7 +544,7 @@ def create_container(user: str, ip: str) -> None:
             policies: {"bind": "/usr/lib/firefox/distribution/policies.json", "mode": "ro"},
         },
         extra_hosts=all_hosts,
-        dns=[GATEWAY_IP, "1.1.1.1"],
+        dns=[GATEWAY_IP, "172.30.0.5"],
         shm_size="1g",
         mem_limit="1536m",
         nano_cpus=1_000_000_000,
@@ -794,7 +797,7 @@ PORTAL_HTML = """<!doctype html>
   <div class="banner-goto">
     <div class="banner-text">
       <h3>Internal Go Links & In-House DNS</h3>
-      <p>Type gotos directly in your browser address bar: <code>koel/</code>, <code>mail/</code>, <code>cockpit/</code>, <code>portainer/</code>, <code>users/</code></p>
+      <p>Type gotos directly in your browser address bar: <code>koel/</code>, <code>mail/</code>, <code>cockpit/</code>, <code>portainer/</code>, <code>users/</code>, <code>firewall/</code></p>
     </div>
     <div class="goto-input-group">
       <input type="text" id="quickGoto" placeholder="e.g. koel, cockpit, wiki" onkeydown="if(event.key==='Enter')launchGoto()">
@@ -849,6 +852,11 @@ PORTAL_HTML = """<!doctype html>
       <div class="tile-top"><span class="dot" style="background:#64748b;"></span><span class="tile-goto">auth/</span></div>
       <div class="tile-name">SSO Portal</div>
       <div class="tile-desc">Authelia Single Sign-On identity portal</div>
+    </a>
+    <a class="tile" href="https://firewall.rohan.run.place/">
+      <div class="tile-top"><span class="dot" style="background:#10b981;"></span><span class="tile-goto">firewall/</span></div>
+      <div class="tile-name">Firewall & Proxy</div>
+      <div class="tile-desc">AdGuard Home DNS firewall & Squid limits</div>
     </a>
     <a class="tile" href="/gotos">
       <div class="tile-top"><span class="dot" style="background:#4f8cff;"></span><span class="tile-goto">goto/</span></div>
@@ -1382,6 +1390,103 @@ async def api_dns_test(name: str):
 
 
 # --------------------------------------------------------------------------- #
+# firewall & squid proxy management api
+# --------------------------------------------------------------------------- #
+@app.get("/api/firewall/status")
+async def api_firewall_status():
+    assert _http is not None
+    try:
+        r = await _http.get("http://172.30.0.5:3000/control/status", auth=("admin", "__REDACTED__"), timeout=2.0)
+        status_data = r.json()
+    except Exception as e:
+        status_data = {"error": str(e), "running": False}
+
+    try:
+        r_stats = await _http.get("http://172.30.0.5:3000/control/stats", auth=("admin", "__REDACTED__"), timeout=2.0)
+        stats_data = r_stats.json()
+    except Exception:
+        stats_data = {}
+
+    blocked_domains = []
+    blocked_file = os.getenv("SQUID_BLOCKED_DOMAINS", "/squid_blocked_domains.txt")
+    if os.path.exists(blocked_file):
+        try:
+            with open(blocked_file, "r") as f:
+                blocked_domains = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+        except Exception:
+            pass
+
+    return {
+        "ok": True,
+        "adguard": {
+            "running": status_data.get("running", False),
+            "protection_enabled": status_data.get("protection_enabled", False),
+            "version": status_data.get("version", ""),
+            "dns_port": status_data.get("dns_port", 53),
+            "num_dns_queries": stats_data.get("num_dns_queries", 0),
+            "num_blocked_filtering": stats_data.get("num_blocked_filtering", 0),
+        },
+        "squid": {
+            "ip": "172.30.0.3",
+            "port": 3128,
+            "delay_pools": "Active (Admin: Unlimited, Users: 2 MB/s burst 4 MB)",
+            "blocked_domains_count": len(blocked_domains),
+            "blocked_domains": blocked_domains,
+        },
+    }
+
+
+@app.get("/api/firewall/squid/blocked-domains")
+async def api_squid_get_blocked():
+    blocked_file = os.getenv("SQUID_BLOCKED_DOMAINS", "/squid_blocked_domains.txt")
+    domains = []
+    if os.path.exists(blocked_file):
+        with open(blocked_file, "r") as f:
+            domains = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+    return {"ok": True, "domains": domains}
+
+
+@app.post("/api/firewall/squid/blocked-domains")
+async def api_squid_add_blocked(payload: dict):
+    domain = payload.get("domain", "").strip().lower()
+    if not domain:
+        raise HTTPException(status_code=400, detail="domain is required")
+    domain = re.sub(r"^https?://", "", domain).split("/")[0].strip()
+    blocked_file = os.getenv("SQUID_BLOCKED_DOMAINS", "/squid_blocked_domains.txt")
+    domains = []
+    if os.path.exists(blocked_file):
+        with open(blocked_file, "r") as f:
+            domains = [l.strip() for l in f if l.strip()]
+
+    if domain not in domains:
+        domains.append(domain)
+        with open(blocked_file, "w") as f:
+            f.write("\n".join(domains) + "\n")
+        try:
+            dc().containers.get("squid").exec_run(["squid", "-k", "reconfigure"])
+        except Exception as e:
+            log.warning("failed to reconfigure squid: %s", e)
+    return {"ok": True, "domain": domain, "total_blocked": len(domains)}
+
+
+@app.delete("/api/firewall/squid/blocked-domains")
+async def api_squid_delete_blocked(domain: str):
+    domain = domain.strip().lower()
+    blocked_file = os.getenv("SQUID_BLOCKED_DOMAINS", "/squid_blocked_domains.txt")
+    if os.path.exists(blocked_file):
+        with open(blocked_file, "r") as f:
+            lines = [l.strip() for l in f if l.strip()]
+        new_lines = [l for l in lines if l != domain]
+        with open(blocked_file, "w") as f:
+            f.write("\n".join(new_lines) + "\n" if new_lines else "")
+        try:
+            dc().containers.get("squid").exec_run(["squid", "-k", "reconfigure"])
+        except Exception as e:
+            log.warning("failed to reconfigure squid: %s", e)
+    return {"ok": True, "deleted": domain}
+
+
+# --------------------------------------------------------------------------- #
 # seamless sso internal auth handler for nginx
 # --------------------------------------------------------------------------- #
 @app.api_route("/internal/authz", methods=["GET", "HEAD", "POST"])
@@ -1398,6 +1503,13 @@ async def internal_authz(request: Request):
             groups = row[0]["groups"] or "admins,apps-all,ai-dev-core,browser"
             display_name = row[0]["display_name"] or username.title()
             email = row[0]["email"] or f"{username}@rohan.run.place"
+
+            # Check admin-only host protection
+            target_host = (request.headers.get("x-forwarded-host") or "").split(":")[0].strip()
+            if target_host in ("firewall.rohan.run.place", "firewall"):
+                group_list = [g.strip() for g in groups.split(",")]
+                if "admins" not in group_list:
+                    return Response(status_code=403, content="Admins only: access restricted to network administrators.", media_type="text/plain")
 
             execute("UPDATE sessions SET last_seen = ? WHERE ip = ?", (int(time.time()), client_ip))
 

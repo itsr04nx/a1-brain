@@ -17,6 +17,35 @@ services:
     networks:
       - control-net
 
+  adguard:
+    image: adguard/adguardhome:latest
+    container_name: adguard
+    restart: unless-stopped
+    volumes:
+      - /home/ubuntu/Workspace/browser/adguard/conf:/opt/adguardhome/conf
+      - /home/ubuntu/Workspace/browser/adguard/work:/opt/adguardhome/work
+    networks:
+      browser-net:
+        ipv4_address: 172.30.0.5
+      egress-net:
+
+  squid:
+    image: ubuntu/squid:latest
+    container_name: squid
+    restart: unless-stopped
+    volumes:
+      - /home/ubuntu/Workspace/browser/squid/squid.conf:/etc/squid/squid.conf:ro
+      - /home/ubuntu/Workspace/browser/squid/blocked_domains.txt:/etc/squid/blocked_domains.txt:ro
+      - /home/ubuntu/Workspace/browser/squid/users:/etc/squid/users:ro
+      - /home/ubuntu/Workspace/browser/squid/logs:/var/log/squid
+      - /home/ubuntu/Workspace/browser/squid/cache:/var/spool/squid
+    networks:
+      browser-net:
+        ipv4_address: 172.30.0.3
+      egress-net:
+    depends_on:
+      - adguard
+
   browser-gateway:
     build: ./gateway
     container_name: browser-gateway
@@ -30,6 +59,7 @@ services:
       GATEWAY_IP: "172.30.0.4"
       PROFILES_DIR: /home/ubuntu/Workspace/browser/profiles
       SQUID_USERS_DIR: /home/ubuntu/Workspace/browser/squid/users
+      SQUID_BLOCKED_DOMAINS: /squid_blocked_domains.txt
       DB_PATH: /data/gateway.db
       IDLE_MINUTES: "20"
       ALLOWED_GROUPS: "admins,apps-all,ai-dev-core,browser"
@@ -38,6 +68,7 @@ services:
     volumes:
       - /home/ubuntu/Workspace/browser/profiles:/home/ubuntu/Workspace/browser/profiles
       - /home/ubuntu/Workspace/browser/squid/users:/home/ubuntu/Workspace/browser/squid/users
+      - /home/ubuntu/Workspace/browser/squid/blocked_domains.txt:/squid_blocked_domains.txt
       - /home/ubuntu/Workspace/browser/data:/data
     networks:
       control-net:
@@ -46,6 +77,7 @@ services:
       authelia_default:
     depends_on:
       - docker-socket-proxy
+      - adguard
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
       interval: 30s
@@ -61,4 +93,6 @@ networks:
   browser-internal:
     external: true
   authelia_default:
+    external: true
+  egress-net:
     external: true

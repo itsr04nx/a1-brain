@@ -49,6 +49,37 @@ def get_portainer_jwt():
         sys.stderr.flush()
     return None
 
+ADGUARD_URL = "http://172.30.0.5:3000"
+ADGUARD_ADMIN_USER = "admin"
+ADGUARD_ADMIN_PASS = "__REDACTED__"
+
+_adguard_cached_cookie = None
+_adguard_cookie_exp = 0
+
+def get_adguard_session():
+    global _adguard_cached_cookie, _adguard_cookie_exp
+    now = time.time()
+    if _adguard_cached_cookie and now < _adguard_cookie_exp - 300:
+        return _adguard_cached_cookie
+
+    try:
+        url = f"{ADGUARD_URL}/control/login"
+        payload = json.dumps({"name": ADGUARD_ADMIN_USER, "password": ADGUARD_ADMIN_PASS}).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        resp = urllib.request.urlopen(req, timeout=5)
+        for k, v in resp.headers.items():
+            if k.lower() == "set-cookie" and "agh_session=" in v:
+                cookie_val = v.split(";")[0].split("=")[1].strip()
+                _adguard_cached_cookie = cookie_val
+                _adguard_cookie_exp = now + 86400 * 30  # 30 days
+                sys.stderr.write(f"[ADGUARD SSO] Acquired fresh session cookie\n")
+                sys.stderr.flush()
+                return cookie_val
+    except Exception as e:
+        sys.stderr.write(f"[ADGUARD SSO ERROR] Logging in: {e}\n")
+        sys.stderr.flush()
+    return None
+
 # Load index.html with safety redirect script injected
 INDEX_HTML = b""
 try:
@@ -144,9 +175,7 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
         # PORTAINER SSO ROUTES
         # -------------------------------------------------------------
         if path == "/portainer/sso-login":
-            # Check authorizations: portainer or admins
-            is_portainer_authorized = ("portainer" in all_groups) or ("admins" in all_groups) or ("lldap_admin" in all_groups)
-            if not is_portainer_authorized:
+            if ("admins" not in all_groups) and ("portainer" not in all_groups):
                 self.send_response(403)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.end_headers()
@@ -183,6 +212,50 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(302)
             self.send_header("Location", "https://auth.rohan.run.place/logout")
             self.send_header("Set-Cookie", "portainer_api_key=; Path=/; SameSite=Lax; HttpOnly; Max-Age=0")
+            self.end_headers()
+            return
+
+        # -------------------------------------------------------------
+        # ADGUARD FIREWALL SSO ROUTES
+        # -------------------------------------------------------------
+        if path == "/firewall/sso-login":
+            if "admins" not in all_groups:
+                self.send_response(403)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                if not is_head:
+                    self.wfile.write(b"<h1>403 Forbidden</h1><p>Your account is not authorized for Firewall management (admins only).</p>")
+                return
+
+            session_token = get_adguard_session()
+            if not session_token:
+                self.send_response(502)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                if not is_head:
+                    self.wfile.write(b"Failed to acquire AdGuard session token")
+                return
+
+            query_params = urllib.parse.parse_qs(parsed.query)
+            target = query_params.get("rd", ["/"])[0]
+            if not target or target.startswith("/auth/sso-login"):
+                target = "/"
+
+            cookie_agh = f"agh_session={session_token}; Path=/; SameSite=Lax; HttpOnly; Max-Age=31536000; Secure"
+            sys.stderr.write(f"[ADGUARD SSO] User {username} autologin -> {target}\n")
+            sys.stderr.flush()
+
+            self.send_response(302)
+            self.send_header("Location", target)
+            self.send_header("Set-Cookie", cookie_agh)
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            return
+
+        if path == "/firewall/logout":
+            self.send_response(302)
+            self.send_header("Location", "https://auth.rohan.run.place/logout")
+            self.send_header("Set-Cookie", "agh_session=; Path=/; SameSite=Lax; HttpOnly; Max-Age=0")
             self.end_headers()
             return
 
@@ -283,5 +356,5 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     with socketserver.TCPServer(("0.0.0.0", PORT), LLDAPBridgeHandler) as httpd:
-        print(f"LLDAP & Portainer SSO Bridge listening on port {PORT}", flush=True)
+        print(f"LLDAP & Portainer & Firewall SSO Bridge listening on port {PORT}", flush=True)
         httpd.serve_forever()
