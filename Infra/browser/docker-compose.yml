@@ -70,6 +70,7 @@ services:
       - /home/ubuntu/Workspace/browser/squid/users:/home/ubuntu/Workspace/browser/squid/users
       - /home/ubuntu/Workspace/browser/squid/blocked_domains.txt:/squid_blocked_domains.txt
       - /home/ubuntu/Workspace/browser/data:/data
+      - /home/ubuntu/Workspace/browser/gateway/app.py:/app/app.py
     networks:
       control-net:
       browser-net:

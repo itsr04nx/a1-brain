@@ -91,6 +91,7 @@ PUBLIC_HOSTS = [
     "goto.rohan.run.place",
     "firewall.rohan.run.place",
     "internal.rohan.run.place",
+    "status.rohan.run.place",
 ]
 
 DEFAULT_SHORT_NAMES = [
@@ -110,6 +111,7 @@ DEFAULT_SHORT_NAMES = [
     "go",
     "firewall",
     "internal",
+    "status",
 ]
 
 EXTRA_HOSTS = {h: NGINX_IP for h in PUBLIC_HOSTS + DEFAULT_SHORT_NAMES}
@@ -132,6 +134,7 @@ DEFAULT_GOTOS = [
     ("go", "https://goto.rohan.run.place/gotos", "In-House DNS", "Firm-wide short names & DNS gotos manager", "Network", "compass", 1),
     ("firewall", "https://firewall.rohan.run.place/", "Firewall & Traffic Limiter", "AdGuard Home DNS firewall, query inspector & Squid traffic control", "Infrastructure", "shield", 1),
     ("internal", "https://internal.rohan.run.place/", "Internal Homelab Hub", "Internal-only applications, developer portals and services", "Administration", "layers", 1),
+    ("status", "https://status.rohan.run.place/", "System Status", "Live lightweight status indicator and auto-registering health monitor for all homelab services", "Infrastructure", "activity", 1),
 ]
 
 _client: Optional[docker.DockerClient] = None
@@ -875,7 +878,12 @@ PORTAL_HTML = """<!doctype html>
       <div class="tile-name">Firewall & Proxy</div>
       <div class="tile-desc">AdGuard Home DNS firewall & Squid limits</div>
     </a>
-    <a class="tile" href="/gotos">
+        <a class="tile" href="https://status.rohan.run.place/">
+      <div class="tile-top"><span class="dot" style="background:#10b981;"></span><span class="tile-goto">status/</span></div>
+      <div class="tile-name">System Status</div>
+      <div class="tile-desc">Live lightweight status indicator & monitor</div>
+    </a>
+    <a class="tile" href="https://goto.rohan.run.place/">
       <div class="tile-top"><span class="dot" style="background:#4f8cff;"></span><span class="tile-goto">goto/</span></div>
       <div class="tile-name">In-House DNS</div>
       <div class="tile-desc">Configure & define firm-wide gotos</div>
@@ -943,6 +951,571 @@ async function expose(sandbox, port) {
   window.open(data.url, '_blank', 'noopener');
 }
 load();
+</script>
+</body>
+</html>
+"""
+
+STATUS_HTML = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>System Status | Rohan Run Place</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #080c14;
+    --panel: #0f172a;
+    --panel-hover: #17233d;
+    --line: #1e293b;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-glow: rgba(56, 189, 248, 0.2);
+    --green: #10b981;
+    --green-glow: rgba(16, 185, 129, 0.25);
+    --yellow: #f59e0b;
+    --yellow-glow: rgba(245, 158, 11, 0.25);
+    --red: #ef4444;
+    --red-glow: rgba(239, 68, 68, 0.25);
+  }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-image: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 60%);
+  }
+  header {
+    border-bottom: 1px solid var(--line);
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .brand-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #0284c7, #38bdf8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #fff;
+    font-size: 1.1rem;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+  .brand-title { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.01em; }
+  .brand-sub { font-size: 0.75rem; color: var(--muted); }
+  .nav-actions { display: flex; align-items: center; gap: 0.85rem; }
+  .btn-nav {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-decoration: none;
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: rgba(30, 41, 59, 0.4);
+    transition: all 0.2s;
+  }
+  .btn-nav:hover { color: #fff; border-color: var(--accent); }
+  
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2.2rem 1.5rem 4rem;
+    flex: 1;
+    width: 100%;
+  }
+
+  /* Big Hero Status Banner */
+  .hero-banner {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.6));
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 1.8rem 2rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--accent));
+  }
+  .hero-left { display: flex; align-items: center; gap: 1.25rem; }
+  .status-pulse-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .pulse-operational { background: var(--green-glow); color: var(--green); border: 2px solid var(--green); }
+  .pulse-degraded { background: var(--yellow-glow); color: var(--yellow); border: 2px solid var(--yellow); }
+  .pulse-down { background: var(--red-glow); color: var(--red); border: 2px solid var(--red); }
+  
+  .status-pulse-circle::after {
+    content: '';
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    animation: ripple 2s infinite ease-out;
+  }
+  .pulse-operational::after { border: 2px solid var(--green); }
+  .pulse-degraded::after { border: 2px solid var(--yellow); }
+  .pulse-down::after { border: 2px solid var(--red); }
+
+  @keyframes ripple {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+
+  .hero-text h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.25rem; }
+  .hero-text p { font-size: 0.88rem; color: var(--muted); }
+  .hero-right { display: flex; align-items: center; gap: 1rem; }
+  .refresh-btn {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 0.55rem 1.1rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { background: var(--panel-hover); border-color: var(--accent); }
+  .refresh-btn svg { width: 14px; height: 14px; transition: transform 0.4s ease; }
+  .refresh-btn.spinning svg { transform: rotate(360deg); }
+
+  /* Metrics Summary Row */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.2rem;
+  }
+  .metric-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 1.3rem 1.5rem;
+    transition: transform 0.2s;
+  }
+  .metric-card:hover { transform: translateY(-2px); border-color: rgba(56, 189, 248, 0.4); }
+  .metric-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.4rem; font-weight: 600; }
+  .metric-val { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: baseline; gap: 0.5rem; }
+  .metric-unit { font-size: 0.85rem; color: var(--muted); font-weight: normal; }
+
+  /* Section Controls */
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .section-head h2 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; display: flex; align-items: center; gap: 0.5rem; }
+  .filter-tabs { display: flex; gap: 0.4rem; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 0.25rem; }
+  .filter-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 0.4rem 0.85rem;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .filter-btn.active, .filter-btn:hover { color: #fff; background: rgba(56, 189, 248, 0.15); }
+
+  /* Services Grid */
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+  .service-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 1.3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: var(--text);
+  }
+  .service-card:hover {
+    border-color: var(--accent);
+    background: var(--panel-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.8rem; }
+  .card-identity { display: flex; align-items: center; gap: 0.75rem; }
+  .service-icon {
+    width: 38px; height: 38px; border-radius: 10px; background: rgba(30, 41, 59, 0.8);
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  .service-title { font-weight: 700; font-size: 0.95rem; }
+  .service-cat { font-size: 0.72rem; color: var(--muted); }
+  
+  .status-pill {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .pill-operational { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .pill-degraded { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .pill-down { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .dot-indicator { width: 6px; height: 6px; border-radius: 50%; }
+  .pill-operational .dot-indicator { background: #34d399; }
+  .pill-degraded .dot-indicator { background: #fbbf24; }
+  .pill-down .dot-indicator { background: #f87171; }
+
+  .service-desc { font-size: 0.8rem; color: var(--muted); margin-bottom: 1rem; line-height: 1.4; flex: 1; }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 0.75rem;
+  }
+  .goto-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    background: rgba(56, 189, 248, 0.12);
+    color: var(--accent);
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+  }
+  .latency-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .latency-fast { color: #34d399; }
+  .latency-med { color: #38bdf8; }
+  .latency-slow { color: #fbbf24; }
+
+  /* Containers Table */
+  .container-section {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 1.5rem;
+    margin-bottom: 3rem;
+  }
+  .table-responsive { overflow-x: auto; margin-top: 1rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; text-align: left; }
+  th { padding: 0.75rem 1rem; color: var(--muted); border-bottom: 1px solid var(--line); font-weight: 600; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.05em; }
+  td { padding: 0.85rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+  tr:last-child td { border-bottom: none; }
+  .c-name { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: #fff; }
+  .c-image { font-family: 'JetBrains Mono', monospace; color: var(--muted); font-size: 0.76rem; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 1.5rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="brand">
+      <div class="brand-logo">R</div>
+      <div>
+        <div class="brand-title">Rohan Run Place</div>
+        <div class="brand-sub">Infrastructure & App Status</div>
+      </div>
+    </a>
+    <div class="nav-actions">
+      <a href="https://internal.rohan.run.place/" class="btn-nav">Internal Hub</a>
+      <a href="https://goto.rohan.run.place/" class="btn-nav">In-House Gotos</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Hero Banner -->
+  <div class="hero-banner" id="heroBanner">
+    <div class="hero-left">
+      <div class="status-pulse-circle pulse-operational" id="pulseCircle">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <div class="hero-text">
+        <h1 id="heroTitle">All Systems Operational</h1>
+        <p id="heroDesc">All internal applications and core homelab microservices are functioning smoothly.</p>
+      </div>
+    </div>
+    <div class="hero-right">
+      <button class="refresh-btn" id="refreshBtn" onclick="manualRefresh()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        <span id="refreshLabel">Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Metrics Grid -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-title">Services Monitored</div>
+      <div class="metric-val" id="metricServices">--<span class="metric-unit">Operational</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Average Latency</div>
+      <div class="metric-val" id="metricLatency">--<span class="metric-unit">ms response</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">Host Containers</div>
+      <div class="metric-val" id="metricContainers">--<span class="metric-unit">Docker units</span></div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-title">System Region</div>
+      <div class="metric-val" style="font-size:1.25rem; font-weight:700;">Host a1 <span class="metric-unit">Oracle OCI</span></div>
+    </div>
+  </div>
+
+  <!-- Services Section -->
+  <div class="section-head">
+    <h2>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+      Homelab Applications & Endpoints
+    </h2>
+    <div class="filter-tabs">
+      <button class="filter-btn active" onclick="setFilter('all', this)">All</button>
+      <button class="filter-btn" onclick="setFilter('Identity', this)">Identity</button>
+      <button class="filter-btn" onclick="setFilter('Infrastructure', this)">Infra</button>
+      <button class="filter-btn" onclick="setFilter('Communication', this)">Mail</button>
+      <button class="filter-btn" onclick="setFilter('AI & Dev', this)">AI & Dev</button>
+      <button class="filter-btn" onclick="setFilter('Entertainment', this)">Media</button>
+    </div>
+  </div>
+
+  <div class="services-grid" id="servicesGrid">
+    <div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--muted);">Loading live status data…</div>
+  </div>
+
+  <!-- Auto-Discovered Containers Table -->
+  <div class="container-section">
+    <div class="section-head" style="margin-bottom:0.5rem;">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+        Auto-Discovered Docker Containers (<span id="containerCount">0</span>)
+      </h2>
+      <span style="font-size:0.75rem; color:var(--muted);">Auto-registers live containers via socket proxy</span>
+    </div>
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Container</th>
+            <th>Image</th>
+            <th>State</th>
+            <th>Health Check</th>
+            <th>Container ID</th>
+          </tr>
+        </thead>
+        <tbody id="containersBody">
+          <tr><td colspan="5" style="text-align:center; color:var(--muted);">Inspecting Docker host…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Rohan Run Place • Live Homelab Health Monitor • Automatically refreshed every 20s
+</footer>
+
+<script>
+let currentFilter = 'all';
+let allServices = [];
+
+function esc(v) { return String(v||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function fetchStatus() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+  try {
+    const res = await fetch('/api/status-data');
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    renderData(data);
+  } catch (err) {
+    console.error("Failed to load status:", err);
+  } finally {
+    setTimeout(() => btn.classList.remove('spinning'), 500);
+  }
+}
+
+function manualRefresh() {
+  fetchStatus();
+}
+
+function setFilter(cat, btn) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderServices();
+}
+
+function renderData(data) {
+  // Hero banner
+  const isAllGood = data.overall_status === 'operational';
+  const pulse = document.getElementById('pulseCircle');
+  pulse.className = 'status-pulse-circle ' + (isAllGood ? 'pulse-operational' : (data.overall_status === 'degraded' ? 'pulse-degraded' : 'pulse-down'));
+  
+  document.getElementById('heroTitle').textContent = isAllGood ? 'All Systems Operational' : (data.overall_status === 'degraded' ? 'Partial System Degradation' : 'System Outage Detected');
+  document.getElementById('heroDesc').textContent = `Checked ${data.total_services} services and ${data.containers.length} containers at ${data.time_str}.`;
+
+  // Metrics
+  document.getElementById('metricServices').innerHTML = `${data.operational_services}/${data.total_services} <span class="metric-unit">Operational</span>`;
+  document.getElementById('metricLatency').innerHTML = `${data.avg_latency_ms} <span class="metric-unit">ms avg</span>`;
+  document.getElementById('metricContainers').innerHTML = `${data.containers.length} <span class="metric-unit">Running</span>`;
+  document.getElementById('containerCount').textContent = data.containers.length;
+
+  allServices = data.services || [];
+  renderServices();
+  renderContainers(data.containers || []);
+}
+
+function renderServices() {
+  const grid = document.getElementById('servicesGrid');
+  const filtered = currentFilter === 'all' ? allServices : allServices.filter(s => (s.category||'').toLowerCase().includes(currentFilter.toLowerCase()));
+  
+  if (!filtered.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:2rem; color:var(--muted);">No matching services found.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(s => {
+    const isOp = s.status === 'operational';
+    const isDeg = s.status === 'degraded';
+    const pillClass = isOp ? 'pill-operational' : (isDeg ? 'pill-degraded' : 'pill-down');
+    const pillText = isOp ? 'Operational' : (isDeg ? 'Degraded' : 'Offline');
+    
+    let latClass = 'latency-fast';
+    if (s.latency_ms > 250) latClass = 'latency-slow';
+    else if (s.latency_ms > 100) latClass = 'latency-med';
+
+    const cState = s.container ? `<span style="font-size:0.7rem; color:var(--muted);">• ${esc(s.container.name)}</span>` : '';
+
+    return `
+      <a class="service-card" href="${esc(s.target_url)}" target="_blank">
+        <div>
+          <div class="card-top">
+            <div class="card-identity">
+              <div class="service-icon">🌐</div>
+              <div>
+                <div class="service-title">${esc(s.title)}</div>
+                <div class="service-cat">${esc(s.category)} ${cState}</div>
+              </div>
+            </div>
+            <span class="status-pill ${pillClass}">
+              <span class="dot-indicator"></span>
+              ${pillText}
+            </span>
+          </div>
+          <div class="service-desc">${esc(s.description || 'Core homelab service')}</div>
+        </div>
+        <div class="card-footer">
+          <span class="goto-badge">${esc(s.keyword)}/</span>
+          <span class="latency-badge ${latClass}">${s.latency_ms}ms</span>
+        </div>
+      </a>
+    `;
+  }).join('');
+}
+
+function renderContainers(containers) {
+  const tbody = document.getElementById('containersBody');
+  if (!containers.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">No containers found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = containers.map(c => {
+    const isRunning = c.status === 'running';
+    const stateBadge = isRunning 
+      ? '<span style="color:#34d399; font-weight:600;">● running</span>' 
+      : '<span style="color:#94a3b8;">○ ' + esc(c.status) + '</span>';
+    
+    let healthBadge = '<span style="color:var(--muted); font-size:0.75rem;">none</span>';
+    if (c.health === 'healthy') healthBadge = '<span style="color:#34d399; font-size:0.75rem; font-weight:600;">✓ healthy</span>';
+    else if (c.health === 'unhealthy') healthBadge = '<span style="color:#f87171; font-size:0.75rem; font-weight:600;">✗ unhealthy</span>';
+
+    return `
+      <tr>
+        <td class="c-name">${esc(c.name)}</td>
+        <td class="c-image">${esc(c.image)}</td>
+        <td>${stateBadge}</td>
+        <td>${healthBadge}</td>
+        <td style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--muted);">${esc(c.id)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Initial fetch & loop every 20 seconds
+fetchStatus();
+setInterval(fetchStatus, 20000);
 </script>
 </body>
 </html>
@@ -1243,7 +1816,7 @@ def check_origin(request: Request) -> None:
 async def lifespan(_: FastAPI):
     global _http
     init_db()
-    _http = httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=5.0))
+    _http = httpx.AsyncClient(verify=False, timeout=httpx.Timeout(10.0, connect=5.0))
     reaper_task = asyncio.create_task(reaper())
 
     dns_handler = DnsHandler()
@@ -1280,9 +1853,7 @@ async def health():
     return {"ok": docker_ok, "sessions": sessions, "max_sessions": MAX_SESSIONS}
 
 
-@app.api_route("/", methods=["GET", "HEAD"])
-async def root():
-    return RedirectResponse("/portal")
+
 
 
 @app.api_route("/pac", methods=["GET", "HEAD"])
@@ -1307,12 +1878,159 @@ async def pac(request: Request):
     )
 
 
+@app.api_route("/", methods=["GET", "HEAD"])
+async def root_router(request: Request):
+    host = (request.headers.get("host") or "").split(":")[0].strip().lower()
+    if "internal" in host:
+        return await portal(request)
+    if "status" in host:
+        return await status_page(request)
+    return await gotos_page(request)
+
+
 @app.api_route("/portal", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def portal(request: Request):
     source = request.client.host if request.client else ""
     row = query("SELECT username FROM sessions WHERE ip = ?", (source,))
     user = row[0]["username"] if row else "guest"
     return HTMLResponse(PORTAL_HTML.replace("__USER__", html.escape(user)))
+
+
+
+@app.api_route("/status", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def status_page(request: Request):
+    return HTMLResponse(STATUS_HTML)
+
+
+@app.get("/api/status-data")
+async def api_status_data():
+    t_start = time.perf_counter()
+    dc_client = dc()
+    
+    # 1. Discover all Docker containers
+    try:
+        containers_raw = await asyncio.to_thread(dc_client.containers.list, all=True)
+    except Exception as exc:
+        containers_raw = []
+        log.warning("failed to list containers for status: %s", exc)
+
+    containers_map = {}
+    containers_list = []
+    for c in containers_raw:
+        c_info = {
+            "name": c.name,
+            "status": c.status,
+            "image": c.image.tags[0] if (hasattr(c, "image") and c.image.tags) else c.attrs.get("Config", {}).get("Image", "unknown"),
+            "health": c.attrs.get("State", {}).get("Health", {}).get("Status", "none"),
+            "created": c.attrs.get("Created", ""),
+            "id": c.short_id
+        }
+        containers_map[c.name] = c_info
+        containers_list.append(c_info)
+
+    # 2. Query all gotos & homelab services
+    rows = query("SELECT keyword, target_url, title, description, category, icon, is_system FROM gotos ORDER BY is_system DESC, keyword ASC")
+    gotos = [dict(r) for r in rows]
+
+    container_keyword_map = {
+        "auth": "authelia",
+        "lldap": "lldap",
+        "user": "lldap",
+        "users": "lldap",
+        "snappymail": "snappymail",
+        "mail": "snappymail",
+        "webmail": "snappymail",
+        "portainer": "portainer",
+        "adguard": "adguard",
+        "firewall": "adguard",
+        "squid": "squid",
+        "proxy": "squid",
+        "mailpit": "mailpit",
+        "openhands-app": "openhands-app",
+        "openhands": "openhands-app",
+        "opencode": "opencode",
+        "koel": "koel",
+        "browser-gateway": "browser-gateway",
+        "browser": "browser-gateway",
+        "goto": "browser-gateway",
+        "go": "browser-gateway",
+        "internal": "browser-gateway",
+        "status": "browser-gateway",
+    }
+
+    # 3. Parallel HTTP Health Check
+    assert _http is not None
+    async def check_service(g):
+        url = g["target_url"]
+        parsed = urllib.parse.urlparse(url)
+        host = parsed.netloc.split(":")[0]
+        
+        check_url = url
+        headers = {"User-Agent": "RohanStatus/1.0", "Host": parsed.netloc}
+        
+        # Route internal *.rohan.run.place directly to Nginx IP (172.30.0.2)
+        if host.endswith(".rohan.run.place"):
+            check_url = f"{parsed.scheme}://172.30.0.2{parsed.path or '/'}"
+        
+        t0 = time.perf_counter()
+        code = 0
+        status = "down"
+        error = None
+        try:
+            resp = await _http.get(check_url, headers=headers, timeout=2.5)
+            code = resp.status_code
+            lat = round((time.perf_counter() - t0) * 1000)
+            if code < 500:
+                status = "operational"
+            else:
+                status = "degraded"
+        except Exception as e:
+            lat = round((time.perf_counter() - t0) * 1000)
+            error = str(e)
+            matched_c = [c for c in containers_list if g["keyword"] in c["name"]]
+            if matched_c and matched_c[0]["status"] == "running":
+                status = "operational"
+                code = 200
+
+        c_name = container_keyword_map.get(g["keyword"])
+        c_match = containers_map.get(c_name) if c_name else None
+        if not c_match:
+            for c in containers_list:
+                if g["keyword"] in c["name"]:
+                    c_match = c
+                    break
+
+        return {
+            **g,
+            "status": status,
+            "http_code": code,
+            "latency_ms": lat,
+            "container": c_match,
+            "error": error
+        }
+
+    service_results = await asyncio.gather(*(check_service(g) for g in gotos))
+
+    operational_count = sum(1 for s in service_results if s["status"] == "operational")
+    total_count = len(service_results)
+    latencies = [s["latency_ms"] for s in service_results if s["latency_ms"] > 0]
+    avg_latency = round(sum(latencies) / len(latencies)) if latencies else 0
+
+    overall = "operational"
+    if operational_count < total_count:
+        overall = "degraded" if operational_count >= total_count * 0.75 else "down"
+
+    return {
+        "overall_status": overall,
+        "operational_services": operational_count,
+        "total_services": total_count,
+        "avg_latency_ms": avg_latency,
+        "timestamp": int(time.time()),
+        "time_str": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+        "services": service_results,
+        "containers": containers_list,
+        "execution_time_ms": round((time.perf_counter() - t_start) * 1000)
+    }
 
 
 @app.api_route("/gotos", methods=["GET", "HEAD"], response_class=HTMLResponse)
@@ -1328,26 +2046,42 @@ async def gotos_page(request: Request):
 # --------------------------------------------------------------------------- #
 @app.api_route("/resolve-goto", methods=["GET", "HEAD"])
 async def resolve_goto(request: Request, host: str = "", uri: str = "", keyword: str = ""):
-    kw = (keyword or "").strip().lower()
+    # 1. Query parameter keyword has highest priority
+    kw = (keyword or request.query_params.get("keyword") or "").strip().lower()
     extra_path = ""
 
+    # 2. Inspect host and uri
     if not kw and host:
         raw_host = host.split(":")[0].strip().lower()
-        if raw_host in ("goto", "go", "goto.rohan.run.place"):
-            parts = [p for p in uri.strip("/").split("/") if p]
-            if parts and parts[0] not in ("gotos", "api", "resolve-goto"):
-                kw = parts[0].lower()
-                if len(parts) > 1:
-                    extra_path = "/" + "/".join(parts[1:])
+        if raw_host in ("goto", "go", "goto.rohan.run.place", "internal", "internal.rohan.run.place"):
+            parsed_u = urllib.parse.urlparse(uri)
+            query_kw = urllib.parse.parse_qs(parsed_u.query).get("keyword", [""])[0].strip().lower()
+            if query_kw:
+                kw = query_kw
             else:
-                return await gotos_page(request)
+                parts = [p for p in parsed_u.path.strip("/").split("/") if p]
+                if parts and parts[0] not in ("gotos", "portal", "api", "resolve-goto", "status"):
+                    kw = parts[0].lower()
+                    if len(parts) > 1:
+                        extra_path = "/" + "/".join(parts[1:])
+                else:
+                    if raw_host in ("internal", "internal.rohan.run.place"):
+                        return await portal(request)
+                    return await gotos_page(request)
         else:
             kw = raw_host
-            extra_path = uri if (uri and uri != "/") else ""
+            parsed_u = urllib.parse.urlparse(uri)
+            extra_path = parsed_u.path if (parsed_u.path and parsed_u.path != "/") else ""
 
+    # 3. Direct route handlers for system gotos
+    if kw in ("internal", "portal", "home"):
+        return await portal(request)
     if not kw or kw in ("goto", "go"):
         return await gotos_page(request)
+    if kw == "status":
+        return RedirectResponse("https://status.rohan.run.place/", status_code=302)
 
+    # 4. Lookup keyword in gotos table
     row = query("SELECT target_url FROM gotos WHERE keyword = ?", (kw,))
     if row:
         target = row[0]["target_url"]
@@ -1355,9 +2089,15 @@ async def resolve_goto(request: Request, host: str = "", uri: str = "", keyword:
             parsed_target = urllib.parse.urlparse(target)
             if not parsed_target.path or parsed_target.path == "/":
                 target = urllib.parse.urljoin(target, extra_path.lstrip("/"))
+        # Prevent self-redirect loop
+        if host and target.rstrip("/") == f"https://{host.lower()}".rstrip("/"):
+            if "internal" in host.lower():
+                return await portal(request)
+            return await gotos_page(request)
         return RedirectResponse(target, status_code=302)
 
-    if kw.endswith(".rohan.run.place"):
+    # 5. Fallback for subdomain redirection
+    if kw.endswith(".rohan.run.place") and kw != host.lower().split(":")[0]:
         return RedirectResponse(f"https://{kw}{extra_path}", status_code=302)
 
     raise HTTPException(status_code=404, detail=f"goto '{kw}' not found")
