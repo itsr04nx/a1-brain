@@ -1,0 +1,1107 @@
+/* ==========================================================================
+   Rohan Run Place - Unified SSO & Homelab Portal Theme
+   Modern Split-Screen with Unsplash Photography & Dark Enterprise Settings
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root,
+body,
+body[data-theme="dark"],
+body[data-theme="light"],
+[data-theme] {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bg-portal: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-card: #1e293b;
+  --bg-card-hover: #263349;
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
+  --color-danger-bg: rgba(239, 68, 68, 0.12);
+  --radius-sm: 8px;
+
+  /* Authelia Tailwind v4 Overrides for high contrast dark theme */
+  --background: #0f172a !important;
+  --foreground: #f8fafc !important;
+  --card: #1e293b !important;
+  --card-foreground: #f8fafc !important;
+  --popover: #1e293b !important;
+  --popover-foreground: #f8fafc !important;
+  --primary: #2563eb !important;
+  --primary-foreground: #ffffff !important;
+  --secondary: #334155 !important;
+  --secondary-foreground: #f8fafc !important;
+  --muted: #1e293b !important;
+  --muted-foreground: #94a3b8 !important;
+  --accent: #334155 !important;
+  --accent-foreground: #ffffff !important;
+  --destructive: #ef4444 !important;
+  --destructive-foreground: #ffffff !important;
+  --border: rgba(255, 255, 255, 0.12) !important;
+  --input: rgba(255, 255, 255, 0.15) !important;
+  --ring: #2563eb !important;
+  --custom-icon: #f8fafc !important;
+  --divider: rgba(255, 255, 255, 0.1) !important;
+  color-scheme: dark !important;
+}
+
+/* ==========================================================================
+   1. GLOBAL PAGE & BASE OVERRIDES
+   ========================================================================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-sans) !important;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--bg-portal) !important;
+  color: var(--text-primary) !important;
+  overflow-x: hidden;
+}
+
+/* Ambient backdrop for login / reset-password stages */
+body:has(#first-factor-stage)::before,
+body:has(#reset-password-step1-stage)::before,
+body:has(#reset-password-step2-stage)::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(237, 242, 247, 0.86) 0%, rgba(226, 232, 240, 0.94) 100%),
+    url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+  filter: blur(32px);
+  transform: scale(1.05);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   2. SPLIT-SCREEN CARD CONTAINER (LOGIN & RESET STAGES)
+   ========================================================================== */
+#first-factor-stage,
+#reset-password-step1-stage,
+#reset-password-step2-stage {
+  min-height: 100vh !important;
+  width: 100vw !important;
+  padding: 40px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Hide ambient pseudo-elements */
+#first-factor-stage::before,
+#reset-password-step1-stage::before,
+#reset-password-step2-stage::before {
+  display: none !important;
+}
+
+/* Hide default Authelia logo & h5/h6 titles and footer links */
+#first-factor-stage .flex-col > .p-2,
+#first-factor-stage .flex-col > .w-full:has(h5),
+#first-factor-stage .flex-col > .w-full:has(h6),
+#first-factor-stage a[href*="authelia"],
+#first-factor-stage div:has(> a[href*="authelia"]),
+#reset-password-step1-stage .flex-col > .p-2,
+#reset-password-step1-stage .flex-col > .w-full:has(h5),
+#reset-password-step1-stage .flex-col > .w-full:has(h6),
+#reset-password-step1-stage a[href*="authelia"],
+#reset-password-step1-stage div:has(> a[href*="authelia"]),
+#reset-password-step2-stage .flex-col > .p-2,
+#reset-password-step2-stage .flex-col > .w-full:has(h5),
+#reset-password-step2-stage .flex-col > .w-full:has(h6),
+#reset-password-step2-stage a[href*="authelia"],
+#reset-password-step2-stage div:has(> a[href*="authelia"]) {
+  display: none !important;
+}
+
+header {
+  position: absolute !important;
+  top: 14px !important;
+  right: 20px !important;
+  z-index: 50 !important;
+}
+
+/* The Main Split-Screen Card */
+#first-factor-stage > div.mx-auto,
+#reset-password-step1-stage > div.mx-auto,
+#reset-password-step2-stage > div.mx-auto {
+  max-width: 1080px !important;
+  width: 92vw !important;
+  min-height: 640px !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.16), 0 0 1px rgba(0, 0, 0, 0.1) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  z-index: 2 !important;
+  animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   3. LEFT HERO PANEL (SALESSKIP STYLE)
+   ========================================================================== */
+.salesskip-hero-panel {
+  flex: 1 1 50% !important;
+  position: relative !important;
+  background-color: #2563eb !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding: 56px 48px !important;
+  box-sizing: border-box !important;
+  color: #ffffff !important;
+}
+
+.salesskip-hero-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.88) 0%, rgba(29, 78, 216, 0.94) 100%),
+    url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+  z-index: 1;
+}
+
+.salesskip-hero-panel.reset-hero::before {
+  background:
+    linear-gradient(135deg, rgba(30, 64, 175, 0.88) 0%, rgba(15, 23, 42, 0.94) 100%),
+    url('https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+}
+
+.salesskip-star-icon {
+  position: relative;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+}
+
+.salesskip-star-icon svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.salesskip-hero-content {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+  margin-bottom: 24px;
+}
+
+.salesskip-hero-title {
+  font-family: var(--font-sans) !important;
+  font-size: 3.2rem !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.03em !important;
+  margin: 0 !important;
+}
+
+.salesskip-hero-desc {
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin: 16px 0 0 0 !important;
+  max-width: 380px !important;
+}
+
+.wave-emoji {
+  display: inline-block;
+  transform-origin: 70% 70%;
+  animation: wave 2.2s infinite ease-in-out;
+}
+
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.salesskip-hero-footer {
+  position: relative;
+  z-index: 2;
+  font-size: 0.775rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.salesskip-geo-lines {
+  position: absolute;
+  right: -80px;
+  bottom: -60px;
+  width: 440px;
+  height: 440px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   4. RIGHT FORM PANEL (CLEAN WHITE)
+   ========================================================================== */
+#first-factor-stage .flex-col.items-stretch,
+#reset-password-step1-stage .flex-col.items-stretch,
+#reset-password-step2-stage .flex-col.items-stretch {
+  flex: 1 1 50% !important;
+  width: 50% !important;
+  max-width: 540px !important;
+  background: #ffffff !important;
+  padding: 56px 48px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+#salesskip-right-header,
+#reset-step1-header,
+#reset-step2-header {
+  margin-bottom: 24px;
+}
+
+.salesskip-right-brand {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2563eb;
+  margin-bottom: 8px;
+}
+
+.salesskip-welcome-title {
+  font-family: var(--font-sans) !important;
+  font-size: 1.85rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.salesskip-welcome-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+/* Input Fields inside Login Form */
+#first-factor-stage form,
+#reset-password-step1-stage form,
+#reset-password-step2-stage form {
+  width: 100% !important;
+}
+
+#first-factor-stage input[type="text"],
+#first-factor-stage input[type="password"],
+#reset-password-step1-stage input[type="text"],
+#reset-password-step2-stage input[type="password"] {
+  height: 44px !important;
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  padding: 8px 14px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.15s ease !important;
+}
+
+#first-factor-stage input:focus,
+#reset-password-step1-stage input:focus,
+#reset-password-step2-stage input:focus {
+  background-color: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  outline: none !important;
+}
+
+/* Primary Button Text & Styling */
+#first-factor-stage #sign-in-button,
+#reset-password-step1-stage #reset-button,
+#reset-password-step2-stage #reset-button {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.925rem !important;
+  height: 44px !important;
+  border-radius: 8px !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+}
+
+#first-factor-stage #sign-in-button:hover,
+#reset-password-step1-stage #reset-button:hover,
+#reset-password-step2-stage #reset-button:hover {
+  background-color: #1d4ed8 !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+}
+
+.salesskip-forget-wrap {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 18px;
+}
+
+.salesskip-click-here {
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ==========================================================================
+   5. SECOND FACTOR STAGE (#second-factor-stage)
+   ========================================================================== */
+#second-factor-stage {
+  min-height: 100vh !important;
+  width: 100vw !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 16px !important;
+  background: var(--bg-portal) !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+#second-factor-stage > div.mx-auto {
+  max-width: 480px !important;
+  width: 100% !important;
+  min-height: auto !important;
+  background: #1e293b !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 36px 32px !important;
+  color: #f8fafc !important;
+  box-sizing: border-box !important;
+}
+
+#second-factor-stage .flex-col.items-stretch {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+#second-factor-stage h4,
+#second-factor-stage h5,
+#second-factor-stage h6 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+}
+
+#second-factor-stage p,
+#second-factor-stage .text-muted-foreground {
+  color: #94a3b8 !important;
+  text-align: center !important;
+}
+
+#second-factor-stage button {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 10px 16px !important;
+  border: none !important;
+  transition: background-color 0.15s ease !important;
+}
+
+#second-factor-stage button:hover {
+  background-color: #1d4ed8 !important;
+}
+
+#second-factor-stage button[variant="ghost"],
+#second-factor-stage button.text-muted-foreground {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+#second-factor-stage button[variant="ghost"]:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   6. SETTINGS WINDOW & SIDEBAR DRAWER (DARK ENTERPRISE THEME)
+   ========================================================================== */
+
+/* Top Navigation Bar */
+nav.fixed.top-0,
+nav.fixed.top-0.bg-primary {
+  background-color: #1e293b !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+nav.fixed.top-0 h6 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+}
+
+#settings-menu {
+  color: #ffffff !important;
+  border-radius: 8px !important;
+}
+
+#settings-menu:hover {
+  background-color: #334155 !important;
+}
+
+/* Sidebar Drawer (Sheet) */
+[data-slot="sheet-content"],
+[data-slot="sheet-content"].bg-background,
+div:has(> div > #settings-menu-overview) {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 12px 0 35px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-slot="sheet-overlay"] {
+  background-color: rgba(15, 23, 42, 0.75) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+[data-slot="sheet-title"],
+[data-slot="sheet-content"] h2 {
+  color: #ffffff !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  padding: 18px 20px 8px 20px !important;
+  letter-spacing: -0.01em !important;
+}
+
+[data-slot="sheet-content"] hr,
+[data-slot="sheet-content"] [data-slot="separator"] {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  margin: 10px 16px !important;
+}
+
+/* Sidebar Navigation Items */
+ul:has(> li > button[id^="settings-menu-"]),
+[data-slot="sheet-content"] ul {
+  list-style: none !important;
+  padding: 8px !important;
+  margin: 0 !important;
+}
+
+button[id^="settings-menu-"] {
+  background-color: transparent !important;
+  color: #94a3b8 !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  margin: 4px 0 !important;
+  width: 100% !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  transition: all 0.15s ease !important;
+  border: 1px solid transparent !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+}
+
+button[id^="settings-menu-"]:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+button[id^="settings-menu-"].bg-accent,
+button[id^="settings-menu-"]:has(.text-primary):hover,
+button[id^="settings-menu-"][aria-current="page"] {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35) !important;
+}
+
+button[id^="settings-menu-"] svg {
+  width: 18px !important;
+  height: 18px !important;
+  color: inherit !important;
+  flex-shrink: 0 !important;
+}
+
+button[id^="settings-menu-"] span {
+  color: inherit !important;
+}
+
+/* Close action in drawer */
+button#settings-menu-close {
+  color: #ef4444 !important;
+  margin-top: 18px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+}
+
+button#settings-menu-close:hover {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #fca5a5 !important;
+}
+
+/* ==========================================================================
+   7. SETTINGS MAIN BODY & CARDS
+   ========================================================================== */
+main.grow {
+  background-color: #0b0f19 !important;
+  min-height: 100vh !important;
+  color: #f8fafc !important;
+  padding: 80px 24px 40px 24px !important;
+}
+
+main.grow > div {
+  max-width: 900px !important;
+  margin: 0 auto !important;
+}
+
+/* Cards */
+[data-slot="card"],
+main.grow .bg-card,
+.bg-card {
+  background-color: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  color: #f8fafc !important;
+  margin-bottom: 24px !important;
+}
+
+[data-slot="card-header"] {
+  padding: 20px 24px 16px 24px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-slot="card-title"] {
+  color: #ffffff !important;
+  font-size: 1.15rem !important;
+  font-weight: 600 !important;
+}
+
+[data-slot="card-description"] {
+  color: #94a3b8 !important;
+  font-size: 0.85rem !important;
+}
+
+[data-slot="card-content"] {
+  padding: 20px 24px !important;
+  color: #f8fafc !important;
+}
+
+[data-slot="card-footer"] {
+  padding: 16px 24px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+/* Data grid in TOTP / WebAuthn information */
+.grid.grid-cols-12 {
+  background: #0f172a !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.grid.grid-cols-12 > div {
+  color: #f8fafc !important;
+}
+
+.grid.grid-cols-12 span.font-medium,
+.grid.grid-cols-12 span.text-muted-foreground {
+  color: #94a3b8 !important;
+}
+
+/* Labels and property keys */
+label,
+[data-slot="label"],
+.text-sm.font-medium {
+  color: #e2e8f0 !important;
+  font-weight: 500 !important;
+}
+
+/* Form Inputs */
+[data-slot="input"],
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  font-size: 0.9rem !important;
+}
+
+[data-slot="input"]:focus,
+input:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+  outline: none !important;
+}
+
+/* Buttons in Settings */
+[data-slot="button"],
+main.grow button,
+[data-slot="dialog-content"] button {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-slot="button"].bg-primary,
+main.grow button.bg-primary,
+button:has(.text-primary-foreground):not(#settings-menu) {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 9px 18px !important;
+}
+
+[data-slot="button"].bg-primary:hover,
+main.grow button.bg-primary:hover {
+  background-color: #1d4ed8 !important;
+}
+
+/* Destructive / Delete buttons */
+button.text-destructive,
+button.bg-destructive,
+[data-slot="button"].bg-destructive {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+button.text-destructive:hover,
+button.bg-destructive:hover {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* Modals & Dialogs (Session elevation, passkey confirmation) */
+[data-slot="dialog-content"] {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  padding: 24px !important;
+}
+
+[data-slot="dialog-title"] {
+  color: #ffffff !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+}
+
+[data-slot="dialog-description"] {
+  color: #94a3b8 !important;
+  font-size: 0.875rem !important;
+}
+
+[data-slot="dialog-overlay"] {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+/* QR Code Display for TOTP */
+img[alt*="QR"],
+img[alt*="qr"],
+svg:has(rect),
+div:has(> img[src*="data:image"]) {
+  background: #ffffff !important;
+  padding: 12px !important;
+  border-radius: 8px !important;
+  display: inline-block !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Monospace secret code */
+code, pre, .font-mono {
+  background-color: #0f172a !important;
+  color: #38bdf8 !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ==========================================================================
+   8. AUTHENTICATED HOMELAB APPS PORTAL LAUNCHER
+   ========================================================================== */
+#rohan-homelab-portal {
+  min-height: 100vh;
+  background-color: var(--bg-portal);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  position: relative;
+  z-index: 10;
+  padding-bottom: 60px;
+}
+
+.portal-navbar {
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+}
+
+.portal-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.portal-brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background-color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.portal-brand-logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+.portal-brand-text h1 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.portal-brand-text p {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 2px 0 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-success);
+}
+
+.portal-user-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-badge-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg-portal);
+  padding: 5px 12px 5px 8px;
+  border-radius: var(--radius-sm);
+  border: none !important;
+}
+
+.user-avatar-bubble {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background-color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.user-avatar-bubble.role-user {
+  background-color: #0284c7;
+}
+
+.user-info-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-display-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.user-role-label {
+  font-size: 0.675rem;
+  color: var(--text-secondary);
+}
+
+.btn-settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #334155;
+  color: #f8fafc;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 0.775rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-settings:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.btn-portal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  margin-left: auto;
+  transition: background-color 0.15s ease;
+}
+
+.btn-portal-back:hover {
+  background-color: #2563eb;
+}
+
+.btn-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 0.775rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-signout:hover {
+  background-color: var(--color-danger);
+  color: #ffffff;
+}
+
+.portal-content {
+  max-width: 1160px;
+  margin: 36px auto 0 auto;
+  padding: 0 24px;
+}
+
+.portal-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+  border: none !important;
+}
+
+.portal-search-box {
+  position: relative;
+  flex: 1;
+  max-width: 360px;
+  min-width: 240px;
+}
+
+.portal-search-box svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.portal-search-input {
+  width: 100%;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px 10px 38px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  border: none !important;
+  outline: none !important;
+}
+
+.category-filter-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.category-filter-btn {
+  background-color: var(--bg-surface);
+  border: none !important;
+  color: var(--text-secondary);
+  font-size: 0.775rem;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.category-filter-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-card-hover);
+}
+
+.category-filter-btn.active {
+  background-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.portal-app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.app-card {
+  position: relative;
+  background-color: var(--bg-card);
+  border: none !important;
+  outline: none !important;
+  border-radius: var(--radius-sm);
+  padding: 22px 24px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+.app-card:hover {
+  background-color: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+
+.app-icon-wrapper {
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-portal);
+  border: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 8px;
+}
+
+.app-real-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+}
+
+.app-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.app-name {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+.portal-empty-search {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-secondary);
+}

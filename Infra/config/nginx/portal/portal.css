@@ -1,11 +1,15 @@
 /* ==========================================================================
    Rohan Run Place - Unified SSO & Homelab Portal Theme
-   Modern Split-Screen with Unsplash Photography & Plus Jakarta Sans
+   Modern Split-Screen with Unsplash Photography & Dark Enterprise Settings
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
-:root {
+:root,
+body,
+body[data-theme="dark"],
+body[data-theme="light"],
+[data-theme] {
   --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --bg-portal: #0f172a;
   --bg-surface: #1e293b;
@@ -19,6 +23,30 @@
   --color-danger: #ef4444;
   --color-danger-bg: rgba(239, 68, 68, 0.12);
   --radius-sm: 8px;
+
+  /* Authelia Tailwind v4 Overrides for high contrast dark theme */
+  --background: #0f172a !important;
+  --foreground: #f8fafc !important;
+  --card: #1e293b !important;
+  --card-foreground: #f8fafc !important;
+  --popover: #1e293b !important;
+  --popover-foreground: #f8fafc !important;
+  --primary: #2563eb !important;
+  --primary-foreground: #ffffff !important;
+  --secondary: #334155 !important;
+  --secondary-foreground: #f8fafc !important;
+  --muted: #1e293b !important;
+  --muted-foreground: #94a3b8 !important;
+  --accent: #334155 !important;
+  --accent-foreground: #ffffff !important;
+  --destructive: #ef4444 !important;
+  --destructive-foreground: #ffffff !important;
+  --border: rgba(255, 255, 255, 0.12) !important;
+  --input: rgba(255, 255, 255, 0.15) !important;
+  --ring: #2563eb !important;
+  --custom-icon: #f8fafc !important;
+  --divider: rgba(255, 255, 255, 0.1) !important;
+  color-scheme: dark !important;
 }
 
 /* ==========================================================================
@@ -31,17 +59,15 @@ html, body {
   height: 100%;
   font-family: var(--font-sans) !important;
   -webkit-font-smoothing: antialiased;
-}
-
-body, body[data-theme="dark"], body[data-theme="light"] {
-  background-color: #edf2f7 !important;
-  color: #111827 !important;
-  position: relative;
+  background-color: var(--bg-portal) !important;
+  color: var(--text-primary) !important;
   overflow-x: hidden;
 }
 
-/* Ethereal blurred Unsplash architectural ambient layer on body */
-body::before {
+/* Ambient backdrop for login / reset-password stages */
+body:has(#first-factor-stage)::before,
+body:has(#reset-password-step1-stage)::before,
+body:has(#reset-password-step2-stage)::before {
   content: "";
   position: fixed;
   top: 0;
@@ -58,10 +84,9 @@ body::before {
 }
 
 /* ==========================================================================
-   2. SPLIT-SCREEN CARD CONTAINER (ALL STAGES)
+   2. SPLIT-SCREEN CARD CONTAINER (LOGIN & RESET STAGES)
    ========================================================================== */
 #first-factor-stage,
-#second-factor-stage,
 #reset-password-step1-stage,
 #reset-password-step2-stage {
   min-height: 100vh !important;
@@ -77,23 +102,17 @@ body::before {
 
 /* Hide ambient pseudo-elements */
 #first-factor-stage::before,
-#second-factor-stage::before,
 #reset-password-step1-stage::before,
 #reset-password-step2-stage::before {
   display: none !important;
 }
 
-/* Hide default Authelia logo & h5/h6 titles and footer links on all stages */
+/* Hide default Authelia logo & h5/h6 titles and footer links */
 #first-factor-stage .flex-col > .p-2,
 #first-factor-stage .flex-col > .w-full:has(h5),
 #first-factor-stage .flex-col > .w-full:has(h6),
 #first-factor-stage a[href*="authelia"],
 #first-factor-stage div:has(> a[href*="authelia"]),
-#second-factor-stage .flex-col > .p-2,
-#second-factor-stage .flex-col > .w-full:has(h5),
-#second-factor-stage .flex-col > .w-full:has(h6),
-#second-factor-stage a[href*="authelia"],
-#second-factor-stage div:has(> a[href*="authelia"]),
 #reset-password-step1-stage .flex-col > .p-2,
 #reset-password-step1-stage .flex-col > .w-full:has(h5),
 #reset-password-step1-stage .flex-col > .w-full:has(h6),
@@ -116,7 +135,6 @@ header {
 
 /* The Main Split-Screen Card */
 #first-factor-stage > div.mx-auto,
-#second-factor-stage > div.mx-auto,
 #reset-password-step1-stage > div.mx-auto,
 #reset-password-step2-stage > div.mx-auto {
   max-width: 1080px !important;
@@ -139,94 +157,94 @@ header {
 @keyframes cardFadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.99);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 /* ==========================================================================
-   3. LEFT HERO PANEL (UNSPLASH BACKDROP + ROYAL BLUE GRADIENT)
+   3. LEFT HERO PANEL (SALESSKIP STYLE)
    ========================================================================== */
 .salesskip-hero-panel {
-  flex: 1 1 54% !important;
-  width: 54% !important;
-  min-height: 640px !important;
-  background:
-    linear-gradient(145deg, rgba(37, 66, 234, 0.88) 0%, rgba(28, 37, 184, 0.92) 55%, rgba(15, 23, 110, 0.96) 100%),
-    url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat !important;
-  color: #ffffff !important;
-  padding: 56px 52px !important;
+  flex: 1 1 50% !important;
+  position: relative !important;
+  background-color: #2563eb !important;
+  overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: space-between !important;
-  position: relative !important;
-  overflow: hidden !important;
+  padding: 56px 48px !important;
   box-sizing: border-box !important;
-  z-index: 1;
+  color: #ffffff !important;
 }
 
-/* Reset Password Variant: Architectural Unsplash Backdrop */
-.salesskip-hero-panel.reset-hero {
-  background:
-    linear-gradient(145deg, rgba(30, 58, 215, 0.88) 0%, rgba(20, 30, 160, 0.92) 55%, rgba(10, 18, 90, 0.96) 100%),
-    url('https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat !important;
-}
-
-/* Soft ambient shadow separating left and right panels */
-.salesskip-hero-panel::after {
+.salesskip-hero-panel::before {
   content: "";
   position: absolute;
   top: 0;
-  right: -20px;
-  width: 40px;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent);
-  pointer-events: none;
-  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.88) 0%, rgba(29, 78, 216, 0.94) 100%),
+    url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+  z-index: 1;
 }
 
-/* 8-pointed Asterisk Star */
+.salesskip-hero-panel.reset-hero::before {
+  background:
+    linear-gradient(135deg, rgba(30, 64, 175, 0.88) 0%, rgba(15, 23, 42, 0.94) 100%),
+    url('https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+}
+
 .salesskip-star-icon {
-  width: 56px;
-  height: 56px;
-  color: #ffffff;
   position: relative;
-  z-index: 3;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
 }
 
 .salesskip-star-icon svg {
   width: 100%;
   height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
 }
 
 .salesskip-hero-content {
   position: relative;
-  z-index: 3;
-  margin: auto 0;
-  padding: 24px 0;
+  z-index: 2;
+  margin-top: auto;
+  margin-bottom: 24px;
 }
 
 .salesskip-hero-title {
-  font-size: 3.25rem !important;
-  font-weight: 800 !important;
-  line-height: 1.15 !important;
-  letter-spacing: -0.035em !important;
-  color: #ffffff !important;
-  margin: 0 0 20px 0 !important;
   font-family: var(--font-sans) !important;
+  font-size: 3.2rem !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.03em !important;
+  margin: 0 !important;
 }
 
-.salesskip-hero-title .wave-emoji {
+.salesskip-hero-desc {
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin: 16px 0 0 0 !important;
+  max-width: 380px !important;
+}
+
+.wave-emoji {
   display: inline-block;
-  font-style: normal;
   transform-origin: 70% 70%;
-  animation: waveAnimation 2.2s infinite ease-in-out;
+  animation: wave 2.2s infinite ease-in-out;
 }
 
-@keyframes waveAnimation {
+@keyframes wave {
   0% { transform: rotate(0deg); }
   10% { transform: rotate(14deg); }
   20% { transform: rotate(-8deg); }
@@ -237,382 +255,551 @@ header {
   100% { transform: rotate(0deg); }
 }
 
-.salesskip-hero-desc {
-  font-size: 1.05rem !important;
-  line-height: 1.6 !important;
-  color: rgba(255, 255, 255, 0.88) !important;
-  max-width: 440px !important;
-  margin: 0 !important;
-  font-weight: 400 !important;
-}
-
 .salesskip-hero-footer {
-  font-size: 0.85rem !important;
-  color: rgba(255, 255, 255, 0.55) !important;
   position: relative;
-  z-index: 3;
+  z-index: 2;
+  font-size: 0.775rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
-/* Geometric curved wireframes in background */
 .salesskip-geo-lines {
   position: absolute;
-  top: -15%;
-  right: -30%;
-  width: 145%;
-  height: 140%;
-  pointer-events: none;
+  right: -80px;
+  bottom: -60px;
+  width: 440px;
+  height: 440px;
   z-index: 1;
-  opacity: 0.35;
+  pointer-events: none;
+  opacity: 0.8;
 }
 
 /* ==========================================================================
-   4. RIGHT FORM PANEL (CLEAN PROFESSIONAL WHITE)
+   4. RIGHT FORM PANEL (CLEAN WHITE)
    ========================================================================== */
 #first-factor-stage .flex-col.items-stretch,
-#second-factor-stage .flex-col.items-stretch,
 #reset-password-step1-stage .flex-col.items-stretch,
 #reset-password-step2-stage .flex-col.items-stretch {
-  flex: 1 1 46% !important;
-  width: 46% !important;
+  flex: 1 1 50% !important;
+  width: 50% !important;
+  max-width: 540px !important;
   background: #ffffff !important;
-  padding: 56px 52px !important;
+  padding: 56px 48px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
   box-sizing: border-box !important;
-  text-align: left !important;
   position: relative !important;
-  z-index: 2;
+  z-index: 2 !important;
 }
 
-/* Top brand name: Rohan Run Place */
+#salesskip-right-header,
+#reset-step1-header,
+#reset-step2-header {
+  margin-bottom: 24px;
+}
+
 .salesskip-right-brand {
-  font-size: 1.65rem !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.025em !important;
-  color: #111827 !important;
-  margin-bottom: 38px !important;
-  text-align: left !important;
-  font-family: var(--font-sans) !important;
-}
-
-/* Welcome Back / Forgot Password header */
-.salesskip-welcome-wrap {
-  margin-bottom: 24px !important;
-  text-align: left !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2563eb;
+  margin-bottom: 8px;
 }
 
 .salesskip-welcome-title {
+  font-family: var(--font-sans) !important;
   font-size: 1.85rem !important;
   font-weight: 800 !important;
+  color: #0f172a !important;
+  margin: 0 !important;
   letter-spacing: -0.025em !important;
-  color: #111827 !important;
-  margin: 0 0 8px 0 !important;
-  line-height: 1.2 !important;
-  font-family: var(--font-sans) !important;
 }
 
 .salesskip-welcome-sub {
-  font-size: 0.8125rem !important;
-  color: #6b7280 !important;
-  line-height: 1.45 !important;
-  margin: 0 !important;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 6px;
+  line-height: 1.45;
 }
 
-.salesskip-link {
-  color: #111827 !important;
-  font-weight: 600 !important;
-  text-decoration: underline !important;
-  cursor: pointer !important;
-}
-
-/* Form container */
-#form-login,
-#form-reset-password-username,
-#form-reset-password {
+/* Input Fields inside Login Form */
+#first-factor-stage form,
+#reset-password-step1-stage form,
+#reset-password-step2-stage form {
   width: 100% !important;
 }
 
-#form-login .grid,
-#form-reset-password-username .grid,
-#form-reset-password .grid {
-  gap: 16px !important;
-}
-
-/* Inputs styled cleanly */
-#form-login input[data-slot="floating-input"],
-#form-reset-password-username input[data-slot="floating-input"],
-#form-reset-password input[data-slot="floating-input"],
-#username-textfield,
-#password-textfield,
-#password1-textfield,
-#password2-textfield {
-  background-color: #f9fafb !important;
-  border: 1px solid #e5e7eb !important;
-  border-bottom: 2px solid #111827 !important;
-  border-radius: 6px 6px 0 0 !important;
-  color: #111827 !important;
-  font-size: 0.95rem !important;
-  font-weight: 500 !important;
-  font-family: var(--font-sans) !important;
-  height: 50px !important;
-  padding: 16px 14px 4px 14px !important;
-  transition: all 0.15s ease !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-#form-login input[data-slot="floating-input"]:focus,
-#form-reset-password-username input[data-slot="floating-input"]:focus,
-#form-reset-password input[data-slot="floating-input"]:focus,
-#username-textfield:focus,
-#password-textfield:focus,
-#password1-textfield:focus,
-#password2-textfield:focus {
-  background-color: #ffffff !important;
-  border-color: #d1d5db !important;
-  border-bottom: 2.5px solid #111827 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-}
-
-label {
-  color: #9ca3af !important;
-  font-size: 0.825rem !important;
-  font-weight: 500 !important;
-}
-
-input:focus ~ label,
-input:not(:placeholder-shown) ~ label {
-  color: #111827 !important;
-  font-weight: 600 !important;
-}
-
-/* Password visibility toggle icon */
-button[aria-label*="password" i],
-button[aria-label*="toggle" i] {
-  color: #6b7280 !important;
-}
-
-/* ==========================================================================
-   Remember Me Checkbox & Label (High-Visibility Modern Style)
-   ========================================================================== */
-#first-factor-stage div:has(> #remember-checkbox),
-#first-factor-stage div:has(> * > #remember-checkbox),
-.flex-row:has(#remember-checkbox) {
-  margin: 12px 0 16px 0 !important;
-  display: flex !important;
-  align-items: center !important;
-}
-
-#remember-checkbox,
-button[data-slot="checkbox"]#remember-checkbox {
-  width: 20px !important;
-  height: 20px !important;
-  min-width: 20px !important;
-  min-height: 20px !important;
-  border: 2px solid #64748b !important;
-  border-radius: 5px !important;
-  background-color: #ffffff !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
-  outline: none !important;
-  padding: 0 !important;
-}
-
-#remember-checkbox:hover,
-button[data-slot="checkbox"]#remember-checkbox:hover {
-  border-color: #18181b !important;
+#first-factor-stage input[type="text"],
+#first-factor-stage input[type="password"],
+#reset-password-step1-stage input[type="text"],
+#reset-password-step2-stage input[type="password"] {
+  height: 44px !important;
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
   background-color: #f8fafc !important;
-  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.1) !important;
+  color: #0f172a !important;
+  padding: 8px 14px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.15s ease !important;
 }
 
-#remember-checkbox[aria-checked="true"],
-#remember-checkbox[data-checked],
-button[data-slot="checkbox"]#remember-checkbox[aria-checked="true"],
-button[data-slot="checkbox"]#remember-checkbox[data-checked] {
-  background-color: #18181b !important;
-  border-color: #18181b !important;
+#first-factor-stage input:focus,
+#reset-password-step1-stage input:focus,
+#reset-password-step2-stage input:focus {
+  background-color: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  outline: none !important;
+}
+
+/* Primary Button Text & Styling */
+#first-factor-stage #sign-in-button,
+#reset-password-step1-stage #reset-button,
+#reset-password-step2-stage #reset-button {
+  background-color: #2563eb !important;
   color: #ffffff !important;
-}
-
-#remember-checkbox [data-slot="checkbox-indicator"],
-#remember-checkbox svg {
-  color: #ffffff !important;
-  stroke: #ffffff !important;
-  stroke-width: 3 !important;
-  width: 14px !important;
-  height: 14px !important;
-}
-
-label[for="remember-checkbox"] {
-  color: #1e293b !important;
+  font-weight: 600 !important;
   font-size: 0.925rem !important;
-  font-weight: 500 !important;
-  font-family: var(--font-sans) !important;
-  cursor: pointer !important;
-  user-select: none !important;
-  margin-left: 8px !important;
-  transition: color 0.15s ease !important;
-}
-
-label[for="remember-checkbox"]:hover {
-  color: #000000 !important;
-}
-
-/* Primary Action Buttons (#sign-in-button, #reset-button) */
-#sign-in-button,
-#reset-button {
-  background: #18181b !important;
+  height: 44px !important;
+  border-radius: 8px !important;
   border: none !important;
-  border-radius: 8px !important;
-  color: #ffffff !important;
-  font-weight: 600 !important;
-  font-size: 0.95rem !important;
-  font-family: var(--font-sans) !important;
-  height: 48px !important;
-  width: 100% !important;
-  margin-top: 10px !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+  transition: all 0.15s ease !important;
   cursor: pointer !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
-  transition: background-color 0.15s ease, transform 0.15s ease !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
 }
 
-#sign-in-button:hover:not(:disabled),
-#reset-button:hover:not(:disabled) {
-  background: #27272a !important;
-  transform: translateY(-1px) !important;
+#first-factor-stage #sign-in-button:hover,
+#reset-password-step1-stage #reset-button:hover,
+#reset-password-step2-stage #reset-button:hover {
+  background-color: #1d4ed8 !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
 }
 
-#sign-in-button:active:not(:disabled),
-#reset-button:active:not(:disabled) {
-  transform: translateY(0) !important;
-}
-
-/* Cancel / Back to Login Button (#cancel-button) */
-#cancel-button {
-  background: #ffffff !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 8px !important;
-  color: #374151 !important;
-  font-weight: 600 !important;
-  font-size: 0.95rem !important;
-  font-family: var(--font-sans) !important;
-  height: 48px !important;
-  margin-top: 10px !important;
-  cursor: pointer !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
-  transition: background-color 0.15s ease, border-color 0.15s ease !important;
-}
-
-#cancel-button:hover {
-  background: #f9fafb !important;
-  border-color: #d1d5db !important;
-}
-
-/* Forget password link */
 .salesskip-forget-wrap {
-  margin-top: 24px !important;
-  text-align: center !important;
-  font-size: 0.825rem !important;
-  color: #6b7280 !important;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 18px;
 }
 
 .salesskip-click-here {
-  color: #111827 !important;
-  font-weight: 600 !important;
-  text-decoration: underline !important;
-  cursor: pointer !important;
-  margin-left: 4px !important;
-}
-
-/* Hide original Reset password button from normal layout */
-#reset-password-button {
-  display: none !important;
-}
-
-/* Hide Powered by Authelia link on login & reset stages */
-#first-factor-stage .flex.items-center.justify-center.gap-2.w-full,
-#second-factor-stage .flex.items-center.justify-center.gap-2.w-full,
-#reset-password-step1-stage .flex.items-center.justify-center.gap-2.w-full,
-#reset-password-step2-stage .flex.items-center.justify-center.gap-2.w-full {
-  display: none !important;
-}
-
-/* Responsive Stacking */
-@media (max-width: 860px) {
-  #first-factor-stage > div.mx-auto,
-  #second-factor-stage > div.mx-auto,
-  #reset-password-step1-stage > div.mx-auto,
-  #reset-password-step2-stage > div.mx-auto {
-    flex-direction: column !important;
-    max-width: 480px !important;
-    width: 95vw !important;
-    min-height: auto !important;
-  }
-  .salesskip-hero-panel {
-    width: 100% !important;
-    flex: none !important;
-    min-height: auto !important;
-    padding: 36px 28px !important;
-  }
-  .salesskip-hero-title {
-    font-size: 2.2rem !important;
-  }
-  .salesskip-hero-desc {
-    font-size: 0.95rem !important;
-  }
-  #first-factor-stage .flex-col.items-stretch,
-  #second-factor-stage .flex-col.items-stretch,
-  #reset-password-step1-stage .flex-col.items-stretch,
-  #reset-password-step2-stage .flex-col.items-stretch {
-    width: 100% !important;
-    flex: none !important;
-    padding: 36px 28px !important;
-  }
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* ==========================================================================
-   5. HOMELAB APPLICATION LAUNCHER PORTAL (FOR AUTHENTICATED USERS)
+   5. SECOND FACTOR STAGE (#second-factor-stage)
+   ========================================================================== */
+#second-factor-stage {
+  min-height: 100vh !important;
+  width: 100vw !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 16px !important;
+  background: var(--bg-portal) !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+#second-factor-stage > div.mx-auto {
+  max-width: 480px !important;
+  width: 100% !important;
+  min-height: auto !important;
+  background: #1e293b !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 36px 32px !important;
+  color: #f8fafc !important;
+  box-sizing: border-box !important;
+}
+
+#second-factor-stage .flex-col.items-stretch {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+#second-factor-stage h4,
+#second-factor-stage h5,
+#second-factor-stage h6 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+}
+
+#second-factor-stage p,
+#second-factor-stage .text-muted-foreground {
+  color: #94a3b8 !important;
+  text-align: center !important;
+}
+
+#second-factor-stage button {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  padding: 10px 16px !important;
+  border: none !important;
+  transition: background-color 0.15s ease !important;
+}
+
+#second-factor-stage button:hover {
+  background-color: #1d4ed8 !important;
+}
+
+#second-factor-stage button[variant="ghost"],
+#second-factor-stage button.text-muted-foreground {
+  background-color: transparent !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+#second-factor-stage button[variant="ghost"]:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   6. SETTINGS WINDOW & SIDEBAR DRAWER (DARK ENTERPRISE THEME)
+   ========================================================================== */
+
+/* Top Navigation Bar */
+nav.fixed.top-0,
+nav.fixed.top-0.bg-primary {
+  background-color: #1e293b !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+nav.fixed.top-0 h6 {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
+}
+
+#settings-menu {
+  color: #ffffff !important;
+  border-radius: 8px !important;
+}
+
+#settings-menu:hover {
+  background-color: #334155 !important;
+}
+
+/* Sidebar Drawer (Sheet) */
+[data-slot="sheet-content"],
+[data-slot="sheet-content"].bg-background,
+div:has(> div > #settings-menu-overview) {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 12px 0 35px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-slot="sheet-overlay"] {
+  background-color: rgba(15, 23, 42, 0.75) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+[data-slot="sheet-title"],
+[data-slot="sheet-content"] h2 {
+  color: #ffffff !important;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  padding: 18px 20px 8px 20px !important;
+  letter-spacing: -0.01em !important;
+}
+
+[data-slot="sheet-content"] hr,
+[data-slot="sheet-content"] [data-slot="separator"] {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  margin: 10px 16px !important;
+}
+
+/* Sidebar Navigation Items */
+ul:has(> li > button[id^="settings-menu-"]),
+[data-slot="sheet-content"] ul {
+  list-style: none !important;
+  padding: 8px !important;
+  margin: 0 !important;
+}
+
+button[id^="settings-menu-"] {
+  background-color: transparent !important;
+  color: #94a3b8 !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  margin: 4px 0 !important;
+  width: 100% !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  transition: all 0.15s ease !important;
+  border: 1px solid transparent !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+}
+
+button[id^="settings-menu-"]:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+button[id^="settings-menu-"].bg-accent,
+button[id^="settings-menu-"]:has(.text-primary):hover,
+button[id^="settings-menu-"][aria-current="page"] {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35) !important;
+}
+
+button[id^="settings-menu-"] svg {
+  width: 18px !important;
+  height: 18px !important;
+  color: inherit !important;
+  flex-shrink: 0 !important;
+}
+
+button[id^="settings-menu-"] span {
+  color: inherit !important;
+}
+
+/* Close action in drawer */
+button#settings-menu-close {
+  color: #ef4444 !important;
+  margin-top: 18px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 8px !important;
+}
+
+button#settings-menu-close:hover {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #fca5a5 !important;
+}
+
+/* ==========================================================================
+   7. SETTINGS MAIN BODY & CARDS
+   ========================================================================== */
+main.grow {
+  background-color: #0b0f19 !important;
+  min-height: 100vh !important;
+  color: #f8fafc !important;
+  padding: 80px 24px 40px 24px !important;
+}
+
+main.grow > div {
+  max-width: 900px !important;
+  margin: 0 auto !important;
+}
+
+/* Cards */
+[data-slot="card"],
+main.grow .bg-card,
+.bg-card {
+  background-color: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  color: #f8fafc !important;
+  margin-bottom: 24px !important;
+}
+
+[data-slot="card-header"] {
+  padding: 20px 24px 16px 24px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-slot="card-title"] {
+  color: #ffffff !important;
+  font-size: 1.15rem !important;
+  font-weight: 600 !important;
+}
+
+[data-slot="card-description"] {
+  color: #94a3b8 !important;
+  font-size: 0.85rem !important;
+}
+
+[data-slot="card-content"] {
+  padding: 20px 24px !important;
+  color: #f8fafc !important;
+}
+
+[data-slot="card-footer"] {
+  padding: 16px 24px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+
+/* Data grid in TOTP / WebAuthn information */
+.grid.grid-cols-12 {
+  background: #0f172a !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.grid.grid-cols-12 > div {
+  color: #f8fafc !important;
+}
+
+.grid.grid-cols-12 span.font-medium,
+.grid.grid-cols-12 span.text-muted-foreground {
+  color: #94a3b8 !important;
+}
+
+/* Labels and property keys */
+label,
+[data-slot="label"],
+.text-sm.font-medium {
+  color: #e2e8f0 !important;
+  font-weight: 500 !important;
+}
+
+/* Form Inputs */
+[data-slot="input"],
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  font-size: 0.9rem !important;
+}
+
+[data-slot="input"]:focus,
+input:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+  outline: none !important;
+}
+
+/* Buttons in Settings */
+[data-slot="button"],
+main.grow button,
+[data-slot="dialog-content"] button {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-slot="button"].bg-primary,
+main.grow button.bg-primary,
+button:has(.text-primary-foreground):not(#settings-menu) {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 9px 18px !important;
+}
+
+[data-slot="button"].bg-primary:hover,
+main.grow button.bg-primary:hover {
+  background-color: #1d4ed8 !important;
+}
+
+/* Destructive / Delete buttons */
+button.text-destructive,
+button.bg-destructive,
+[data-slot="button"].bg-destructive {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+button.text-destructive:hover,
+button.bg-destructive:hover {
+  background-color: #ef4444 !important;
+  color: #ffffff !important;
+}
+
+/* Modals & Dialogs (Session elevation, passkey confirmation) */
+[data-slot="dialog-content"] {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  padding: 24px !important;
+}
+
+[data-slot="dialog-title"] {
+  color: #ffffff !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+}
+
+[data-slot="dialog-description"] {
+  color: #94a3b8 !important;
+  font-size: 0.875rem !important;
+}
+
+[data-slot="dialog-overlay"] {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+/* QR Code Display for TOTP */
+img[alt*="QR"],
+img[alt*="qr"],
+svg:has(rect),
+div:has(> img[src*="data:image"]) {
+  background: #ffffff !important;
+  padding: 12px !important;
+  border-radius: 8px !important;
+  display: inline-block !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Monospace secret code */
+code, pre, .font-mono {
+  background-color: #0f172a !important;
+  color: #38bdf8 !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  font-size: 0.95rem !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ==========================================================================
+   8. AUTHENTICATED HOMELAB APPS PORTAL LAUNCHER
    ========================================================================== */
 #rohan-homelab-portal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow-y: auto;
+  min-height: 100vh;
   background-color: var(--bg-portal);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  box-sizing: border-box;
-  z-index: 99999;
-  padding: 0 0 60px 0;
-  border: none !important;
-  outline: none !important;
-  -webkit-font-smoothing: antialiased;
-}
-
-#rohan-homelab-portal * {
-  box-sizing: border-box;
-  border: none;
-  outline: none;
+  position: relative;
+  z-index: 10;
+  padding-bottom: 60px;
 }
 
 .portal-navbar {
   position: sticky;
   top: 0;
   background-color: var(--bg-surface);
-  border: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
   padding: 14px 32px;
   display: flex;
   align-items: center;
@@ -716,6 +903,45 @@ label[for="remember-checkbox"]:hover {
 .user-role-label {
   font-size: 0.675rem;
   color: var(--text-secondary);
+}
+
+.btn-settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #334155;
+  color: #f8fafc;
+  border-radius: var(--radius-sm);
+  padding: 7px 14px;
+  font-size: 0.775rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: none !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-settings:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.btn-portal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  margin-left: auto;
+  transition: background-color 0.15s ease;
+}
+
+.btn-portal-back:hover {
+  background-color: #2563eb;
 }
 
 .btn-signout {

@@ -226,7 +226,7 @@
     const stage = document.getElementById('first-factor-stage');
     if (!stage) return;
 
-    const cardContainer = stage.querySelector('.mx-auto.w-full');
+    const cardContainer = stage.querySelector('.mx-auto.w-full') || stage.querySelector('.mx-auto');
     if (!cardContainer) return;
 
     // Prepend Left Blue Hero Panel with Unsplash Backdrop
@@ -322,10 +322,9 @@
     const stage = document.getElementById('reset-password-step1-stage');
     if (!stage) return;
 
-    const cardContainer = stage.querySelector('.mx-auto.w-full');
+    const cardContainer = stage.querySelector('.mx-auto.w-full') || stage.querySelector('.mx-auto');
     if (!cardContainer) return;
 
-    // Prepend Left Hero Panel (Architectural Unsplash Backdrop)
     if (!document.getElementById('reset-hero-panel')) {
       const heroPanel = document.createElement('div');
       heroPanel.id = 'reset-hero-panel';
@@ -355,7 +354,6 @@
           © 2026 ${BRAND_NAME}. All rights reserved.
         </div>
 
-        <!-- Concentric geometric curved wireframes in background -->
         <svg class="salesskip-geo-lines" viewBox="0 0 500 500" fill="none">
           <rect x="140" y="40" width="320" height="420" rx="42" transform="rotate(20 140 40)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
           <rect x="175" y="70" width="300" height="390" rx="42" transform="rotate(24 175 70)" stroke="rgba(255,255,255,0.11)" stroke-width="1.5"/>
@@ -365,7 +363,6 @@
       cardContainer.insertBefore(heroPanel, cardContainer.firstChild);
     }
 
-    // Insert Right Header
     const form = stage.querySelector('#form-reset-password-username') || stage.querySelector('form');
     if (form && !document.getElementById('reset-step1-header')) {
       const rightHeader = document.createElement('div');
@@ -382,7 +379,6 @@
       form.parentNode.insertBefore(rightHeader, form);
     }
 
-    // Customize Buttons
     const resetBtn = stage.querySelector('#reset-button');
     if (resetBtn) {
       for (let i = 0; i < resetBtn.childNodes.length; i++) {
@@ -395,12 +391,6 @@
 
     const cancelBtn = stage.querySelector('#cancel-button');
     if (cancelBtn) {
-      for (let i = 0; i < cancelBtn.childNodes.length; i++) {
-        if (cancelBtn.childNodes[i].nodeType === Node.TEXT_NODE) {
-          cancelBtn.childNodes[i].nodeValue = 'Back to Login';
-          break;
-        }
-      }
       cancelBtn.addEventListener('click', (e) => {
         e.preventDefault();
         window.location.href = '/';
@@ -415,7 +405,7 @@
     const stage = document.getElementById('reset-password-step2-stage');
     if (!stage) return;
 
-    const cardContainer = stage.querySelector('.mx-auto.w-full');
+    const cardContainer = stage.querySelector('.mx-auto.w-full') || stage.querySelector('.mx-auto');
     if (!cardContainer) return;
 
     if (!document.getElementById('reset-step2-hero-panel')) {
@@ -486,9 +476,40 @@
   }
 
   // -------------------------------------------------------------------------
-  // 4. APPLICATION LAUNCHER (AUTHENTICATED)
+  // 4. ENHANCE SETTINGS PAGE (/settings)
+  // -------------------------------------------------------------------------
+  function enhanceSettingsPage() {
+    const observer = new MutationObserver(() => {
+      // Find top nav on settings page
+      const nav = document.querySelector('nav.fixed.top-0');
+      if (nav && !document.getElementById('btn-settings-portal-back')) {
+        const wrap = nav.querySelector('.flex.items-center') || nav;
+        const backBtn = document.createElement('a');
+        backBtn.id = 'btn-settings-portal-back';
+        backBtn.className = 'btn-portal-back';
+        backBtn.href = '/';
+        backBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+          Back to Portal
+        `;
+        wrap.appendChild(backBtn);
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // -------------------------------------------------------------------------
+  // 5. APPLICATION LAUNCHER (AUTHENTICATED)
   // -------------------------------------------------------------------------
   async function renderPortal(user) {
+    if (window.location.pathname.startsWith('/settings')) {
+      enhanceSettingsPage();
+      return;
+    }
+
     await loadDynamicApps();
     const root = document.getElementById('root');
     if (root) {
@@ -506,7 +527,6 @@
       if (!app.isAllowed(user)) return false;
       const normUrl = normalizeUrl(app.url);
       const normName = (app.name || '').toLowerCase().trim();
-      // Normalize aliases like 'user' vs 'users' and 'mail' vs 'webmail'
       const canonicalHost = normUrl.replace(/^users\.rohan\.run\.place/, 'user.rohan.run.place')
                                    .replace(/^webmail\.rohan\.run\.place/, 'mail.rohan.run.place');
       if (seenUrls.has(canonicalHost) || seenNames.has(normName)) {
@@ -516,6 +536,7 @@
       seenNames.add(normName);
       return true;
     });
+
     const portal = document.createElement('div');
     portal.id = 'rohan-homelab-portal';
 
@@ -545,6 +566,13 @@
               <span class="user-role-label">${escapeHtml(roleTitle)}</span>
             </div>
           </div>
+          <a class="btn-settings" href="/settings" title="2FA & Account Settings">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            2FA / Settings
+          </a>
           <button class="btn-signout" id="portal-logout-btn" title="Sign out of SSO">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -666,7 +694,7 @@
   }
 
   // -------------------------------------------------------------------------
-  // 5. LIFECYCLE & MUTATION OBSERVER
+  // 6. LIFECYCLE & MUTATION OBSERVER
   // -------------------------------------------------------------------------
   function dispatchEnhancement() {
     if (document.getElementById('first-factor-stage')) {
@@ -679,6 +707,11 @@
   }
 
   async function start() {
+    if (window.location.pathname.startsWith('/settings')) {
+      enhanceSettingsPage();
+      return;
+    }
+
     const user = await checkUserSession();
     if (user) {
       await renderPortal(user);
