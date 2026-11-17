@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corporate Compliance Alert &bull; Access Restricted</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --card-border: #1f293d;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --brand-blue: #1d4ed8;
+      --danger-red: #ef4444;
+      --amber-gold: #f59e0b;
+      --accent-badge: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      width: 100%;
+      max-width: 720px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+    }
+    .header-banner {
+      background: linear-gradient(135deg, #0b1528 0%, #172554 100%);
+      border-bottom: 2px solid #2563eb;
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .shield-icon {
+      width: 52px;
+      height: 52px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .shield-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--danger-red);
+    }
+    .header-titles h1 {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-titles p {
+      font-size: 13px;
+      color: #93c5fd;
+      margin-top: 4px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+    .content-body {
+      padding: 32px;
+    }
+    .alert-banner {
+      background: rgba(239, 68, 68, 0.08);
+      border-left: 4px solid var(--danger-red);
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 24px;
+    }
+    .alert-banner h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fca5a5;
+      margin-bottom: 4px;
+    }
+    .alert-banner p {
+      font-size: 14px;
+      color: #e5e7eb;
+      line-height: 1.5;
+    }
+    .audit-grid {
+      background: #0d131f;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    .audit-row {
+      display: flex;
+      border-bottom: 1px solid #1a2333;
+      padding: 11px 16px;
+      font-size: 13px;
+    }
+    .audit-row:last-child {
+      border-bottom: none;
+    }
+    .audit-label {
+      width: 170px;
+      color: var(--text-muted);
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .audit-value {
+      color: #f3f4f6;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      word-break: break-all;
+    }
+    .audit-value.restricted {
+      color: #f87171;
+      font-weight: 600;
+    }
+    .policy-notice {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .policy-notice strong {
+      color: #e5e7eb;
+    }
+    .action-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--card-border);
+      padding-top: 20px;
+      margin-top: 8px;
+    }
+    .ref-code {
+      font-size: 12px;
+      color: #6b7280;
+      font-family: ui-monospace, monospace;
+    }
+    .btn-return {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-return:hover {
+      background: #334155;
+      color: #ffffff;
+    }
+    .regulatory-footer {
+      max-width: 720px;
+      width: 100%;
+      margin-top: 16px;
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-banner">
+      <div class="shield-icon">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="header-titles">
+        <h1>Global Information Security &bull; Boundary Control</h1>
+        <p>FINRA Rule 3110 / SEC Rule 17a-4 Electronic Communications Perimeter</p>
+      </div>
+    </div>
+
+    <div class="content-body">
+      <div class="alert-banner">
+        <h2>Corporate Policy Violation &bull; Restricted Content</h2>
+        <p>In accordance with Corporate Compliance Policy SEC-FIN-704 and firm-wide Information Risk Governance, access to the requested web domain has been denied from this corporate environment.</p>
+      </div>
+
+      <div class="audit-grid">
+        <div class="audit-row">
+          <div class="audit-label">Requested URL</div>
+          <div class="audit-value">%U</div>
+        </div>
+        <div class="audit-row">
+          <div class="audit-label">Target Hostname</div>
+          <div class="audit-value">%H</div>
+        </div>
+        <div class="audit-row">
+          <div class="audit-label">Restriction Category</div>
+          <div class="audit-value restricted">PROHIBITED (Adult / Gambling / Gaming / Dating / P2P / Unregulated Crypto)</div>
+        </div>
+        <div class="audit-row">
+          <div class="audit-label">Client IP / Workstation</div>
+          <div class="audit-value">%a</div>
+        </div>
+        <div class="audit-row">
+          <div class="audit-label">Security Incident Timestamp</div>
+          <div class="audit-value">%T</div>
+        </div>
+        <div class="audit-row">
+          <div class="audit-label">Firewall Rule Enforcement</div>
+          <div class="audit-value">GATEWAY-L7-BLOCK-POLICY-704</div>
+        </div>
+      </div>
+
+      <p class="policy-notice">
+        <strong>Information Security Notice:</strong> All inbound and outbound traffic through this perimeter is logged, inspected, and archived in accordance with institutional regulatory standards. Attempting to bypass corporate boundary controls, utilize unsanctioned proxy servers, or tunnel non-business traffic is a direct violation of Corporate Code of Conduct and may result in disciplinary action up to and including termination.
+      </p>
+
+      <div class="action-panel">
+        <span class="ref-code">AUDIT-ID: SEC-704-%T</span>
+        <button class="btn-return" onclick="window.history.back()">Return to Previous Page</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="regulatory-footer">
+    CONFIDENTIAL &bull; PROPRIETARY &bull; ROHAN FINANCIAL GROUP INFORMATION SECURITY OPERATIONS CENTER (ISOC)<br/>
+    For legitimate business justification exceptions, submit an IT Service Catalog request with approval from your Managing Director.
+  </div>
+</body>
+</html>

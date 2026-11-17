@@ -38,6 +38,8 @@ services:
     volumes:
       - /home/ubuntu/Workspace/browser/squid/squid.conf:/etc/squid/squid.conf:ro
       - /home/ubuntu/Workspace/browser/squid/blocked_domains.txt:/etc/squid/blocked_domains.txt:ro
+      - /home/ubuntu/Workspace/browser/squid/categories:/etc/squid/categories:ro
+      - /home/ubuntu/Workspace/browser/squid/errors:/etc/squid/errors:ro
       - /home/ubuntu/Workspace/browser/squid/users:/etc/squid/users:ro
       - /home/ubuntu/Workspace/browser/squid/logs:/var/log/squid
       - /home/ubuntu/Workspace/browser/squid/cache:/var/spool/squid

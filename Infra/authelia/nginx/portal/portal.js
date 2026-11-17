@@ -46,7 +46,7 @@
       name: 'Internal Homelab Hub',
       url: 'https://internal.rohan.run.place/',
       subdomain: 'internal.rohan.run.place',
-      category: 'Administration',
+      category: 'Infrastructure',
       logo: '/portal/icons/internal.svg',
       isAllowed: (u) => u.isAdmin || u.groups.includes('internal') || u.groups.includes('apps-all')
     },
@@ -91,7 +91,7 @@
       name: 'SnappyMail',
       url: 'https://mail.rohan.run.place/',
       subdomain: 'mail.rohan.run.place',
-      category: 'Communication',
+      category: 'Mail',
       logo: '/portal/icons/snappymail.svg',
       isAllowed: () => true
     },
@@ -127,7 +127,7 @@
       name: 'Mailpit Testing',
       url: 'https://mailpit.rohan.run.place/',
       subdomain: 'mailpit.rohan.run.place',
-      category: 'Developer',
+      category: 'Mail',
       logo: '/portal/icons/mailpit.svg',
       isAllowed: (u) => u.isAdmin || u.groups.includes('mailpit')
     }
@@ -135,47 +135,61 @@
 
   let APPS = [...BASE_APPS];
 
+  function normalizeUrl(u) {
+    if (!u) return '';
+    try {
+      const parsed = new URL(u);
+      return (parsed.hostname + parsed.pathname).replace(/\/+$/, '').toLowerCase();
+    } catch (e) {
+      return u.replace(/^https?:\/\//i, '').replace(/\/+$/, '').toLowerCase();
+    }
+  }
+
   async function loadDynamicApps() {
     try {
       const res = await fetch('/portal/api/apps', { credentials: 'same-origin' });
       if (res.ok) {
         const dynamicList = await res.json();
         if (Array.isArray(dynamicList) && dynamicList.length > 0) {
-          const list = dynamicList
-            .filter(g => g.keyword !== 'auth' && g.keyword !== 'go')
-            .map(g => {
-              const kw = g.keyword.toLowerCase();
-              const existing = BASE_APPS.find(a => a.id === kw || a.subdomain?.startsWith(kw + '.'));
-              let targetUrl = g.target_url || (existing ? existing.url : `https://${kw}.rohan.run.place/`);
-              let sub = (targetUrl && targetUrl.includes('//')) ? targetUrl.split('/')[2].split(':')[0] : `${kw}.rohan.run.place`;
-              
-              let logo = (existing && existing.logo) ? existing.logo : `/portal/icons/${kw}.svg`;
-              return {
-                id: kw,
-                name: existing ? existing.name : (g.title || kw.toUpperCase()),
-                url: targetUrl,
-                subdomain: sub,
-                category: existing ? existing.category : (g.category || 'Infrastructure'),
-                description: g.description || (existing ? existing.description : ''),
-                logo: logo,
-                isAllowed: (u) => {
-                  if (u.isAdmin) return true;
-                  if (u.groups.includes('apps-all')) return true;
-                  if (u.groups.includes(kw)) return true;
-                  if (existing && existing.isAllowed) return existing.isAllowed(u);
-                  if (['koel', 'snappymail', 'mail', 'webmail', 'lldap', 'user', 'users', 'status'].includes(kw)) return true;
-                  return false;
-                }
-              };
-            });
+          const baseUrls = new Set(BASE_APPS.map(a => normalizeUrl(a.url)));
+          const baseIds = new Set(BASE_APPS.map(a => a.id.toLowerCase()));
+          const ignoredKeywords = new Set([
+            'auth', 'go', 'goto', 'user', 'users', 'mail', 'webmail', 'snappymail', 'lldap',
+            'browser', 'portainer', 'firewall', 'status', 'internal', 'koel', 'paperclip', 'openhands', 'opencode', 'cockpit', 'mailpit'
+          ]);
 
-          const seen = new Set(list.map(a => a.id));
-          for (const base of BASE_APPS) {
-            if (!seen.has(base.id)) {
-              list.push(base);
+          const dynamicNewApps = [];
+          for (const g of dynamicList) {
+            const kw = (g.keyword || '').toLowerCase().trim();
+            if (!kw || ignoredKeywords.has(kw) || baseIds.has(kw)) {
+              continue;
             }
+            const targetUrl = g.target_url || `https://${kw}.rohan.run.place/`;
+            const norm = normalizeUrl(targetUrl);
+            if (baseUrls.has(norm)) {
+              continue;
+            }
+            if (dynamicNewApps.some(a => normalizeUrl(a.url) === norm || a.id === kw)) {
+              continue;
+            }
+
+            const sub = (targetUrl.includes('//')) ? targetUrl.split('/')[2].split(':')[0] : `${kw}.rohan.run.place`;
+            dynamicNewApps.push({
+              id: kw,
+              name: g.title || kw.toUpperCase(),
+              url: targetUrl,
+              subdomain: sub,
+              category: g.category || 'Infrastructure',
+              description: g.description || '',
+              logo: `/portal/icons/${kw}.svg`,
+              isAllowed: (u) => {
+                if (u.isAdmin || u.groups.includes('apps-all') || u.groups.includes(kw)) return true;
+                return false;
+              }
+            });
           }
-          APPS = list;
+
+          APPS = [...BASE_APPS, ...dynamicNewApps];
           return;
         }
       }
@@ -486,7 +500,14 @@
       existing.remove();
     }
 
-    const allowedApps = APPS.filter((app) => app.isAllowed(user));
+    const seenUrls = new Set();
+    const allowedApps = APPS.filter((app) => {
+      if (!app.isAllowed(user)) return false;
+      const norm = normalizeUrl(app.url);
+      if (seenUrls.has(norm)) return false;
+      seenUrls.add(norm);
+      return true;
+    });
     const portal = document.createElement('div');
     portal.id = 'rohan-homelab-portal';
 
@@ -540,7 +561,7 @@
             <button class="category-filter-btn" data-cat="Infrastructure">Infrastructure</button>
             <button class="category-filter-btn" data-cat="Development">Development</button>
             <button class="category-filter-btn" data-cat="AI Tools">AI Tools</button>
-            <button class="category-filter-btn" data-cat="Communication">Mail</button>
+            <button class="category-filter-btn" data-cat="Mail">Mail</button>
             <button class="category-filter-btn" data-cat="Media">Media</button>
             <button class="category-filter-btn" data-cat="Identity">Identity</button>
           </div>

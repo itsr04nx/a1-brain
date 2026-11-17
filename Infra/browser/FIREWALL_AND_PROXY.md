@@ -116,3 +116,38 @@ All tests performed from inside the cloud browser sessions (`ff-admin` and `ff-r
    - Blocked domains return `0.0.0.0` from AdGuard Home and Squid returns `HTTP 503 / ERR_CONNECT_FAIL` or `HTTP 403 Forbidden`.
 6. **Bandwidth Throttling**:
    - Squid delay pool class 2 actively caps non-admin clients to 2 MB/s burstable to 4 MB/s.
+
+
+## Morgan Stanley / Tier-1 Regulated Financial Firm Compliance Policy
+
+To comply with institutional regulatory frameworks (FINRA Rule 3110, SEC Rule 17a-4, and corporate Acceptable Use Directives), the firewall and proxy layers enforce strict perimeter boundary controls:
+
+### 1. Enforced Category Blocklists (`/etc/squid/categories/`)
+- **Adult & Pornography (`adult.txt`)**: 35+ major pornography networks, escort services, live cams, adult communities.
+- **Gambling & Sportsbooks (`gambling.txt`)**: 27+ online casinos, sports betting platforms, poker rooms, crypto betting sites.
+- **Gaming & Game Streaming (`gaming.txt`)**: 27+ gaming ecosystems, game launchers (Steam, Epic, Riot, Roblox), and game streaming (Twitch, Discord).
+- **Dating & Social Hookups (`dating.txt`)**: 17+ dating platforms and hookup applications (Tinder, Bumble, Match, Hinge, etc.).
+- **Unregulated P2P & Piracy (`p2p_torrents.txt`)**: 17+ torrent indexers, trackers, and illicit file locker domains.
+- **Cryptocurrency Mining (`crypto_mining.txt`)**: 12+ mining pools, web-based coin miners, and unapproved crypto faucets.
+- **Weapons & Extremist Content (`weapons_violence.txt`)**: 7+ unmoderated boards and unregulated weapons sales portals.
+
+### 2. Corporate Compliance Block Page (`/etc/squid/errors/ERR_CORPORATE_BLOCKED`)
+- Automatically rendered whenever an employee or browser session attempts to visit a prohibited category or domain.
+- Styled in enterprise Morgan Stanley / Wall Street cybersecurity theme:
+  - Header: `Global Information Security • Boundary Control (FINRA Rule 3110 / SEC Rule 17a-4 Electronic Communications Perimeter)`
+  - Alert: `Corporate Policy Violation • Restricted Content (Policy SEC-FIN-704)`
+  - Audit Grid: Injects dynamic request metadata:
+    - Requested URL: `%U`
+    - Target Hostname: `%H`
+    - Client IP / Workstation: `%a`
+    - Security Incident Timestamp: `%T`
+    - Audit Incident Reference: `SEC-704-%T`
+  - Action button: Safe browser back navigation.
+
+### 3. Distributed Compute & Offload Architecture (micro-1 & micro-2)
+- **Host `micro-1` (100.100.224.19)**:
+  - 2 vCPU AMD, 1 GB RAM, 37 GB free NVMe disk.
+  - Role: Dedicated worker node for batch compute, Paperclip agent runners, and secondary offsite AdGuard DNS replica.
+- **Host `micro-2` (100.107.161.3)**:
+  - 2 vCPU AMD, 1 GB RAM, 36 GB free NVMe disk.
+  - Role: Audio streaming server (Koel Music on `:8000`), offloading heavy audio transcoding and media streaming from `a1`.
