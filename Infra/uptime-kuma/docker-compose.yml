@@ -1,0 +1,38 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - /home/ubuntu/Workspace/uptime-kuma/data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - UPTIME_KUMA_PORT=3001
+      - TZ=Asia/Kolkata
+    extra_hosts:
+      - "auth.rohan.run.place:172.30.0.2"
+      - "user.rohan.run.place:172.30.0.2"
+      - "users.rohan.run.place:172.30.0.2"
+      - "goto.rohan.run.place:172.30.0.2"
+      - "internal.rohan.run.place:172.30.0.2"
+      - "portainer.rohan.run.place:172.30.0.2"
+      - "firewall.rohan.run.place:172.30.0.2"
+      - "cockpit.rohan.run.place:172.30.0.2"
+      - "browser.rohan.run.place:172.30.0.2"
+      - "openhands.rohan.run.place:172.30.0.2"
+      - "opencode.rohan.run.place:172.30.0.2"
+      - "mail.rohan.run.place:172.30.0.2"
+      - "webmail.rohan.run.place:172.30.0.2"
+      - "mailpit.rohan.run.place:172.30.0.2"
+      - "koel.rohan.run.place:172.30.0.2"
+      - "status.rohan.run.place:172.30.0.2"
+    networks:
+      browser-net:
+        ipv4_address: 172.30.0.6
+      authelia_default:
+
+networks:
+  browser-net:
+    external: true
+  authelia_default:
+    external: true

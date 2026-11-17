@@ -2372,8 +2372,11 @@ async def internal_authz(request: Request):
             if k.lower() not in ("content-length", "content-encoding", "transfer-encoding"):
                 resp_headers[k] = v
 
+        code = authelia_resp.status_code
+        if code in (301, 302, 303, 307, 308):
+            code = 401
         return Response(
-            status_code=authelia_resp.status_code,
+            status_code=code,
             headers=resp_headers,
             content=authelia_resp.content,
         )
