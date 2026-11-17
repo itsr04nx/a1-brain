@@ -90,6 +90,7 @@ PUBLIC_HOSTS = [
     "portainer.rohan.run.place",
     "goto.rohan.run.place",
     "firewall.rohan.run.place",
+    "internal.rohan.run.place",
 ]
 
 DEFAULT_SHORT_NAMES = [
@@ -108,6 +109,7 @@ DEFAULT_SHORT_NAMES = [
     "goto",
     "go",
     "firewall",
+    "internal",
 ]
 
 EXTRA_HOSTS = {h: NGINX_IP for h in PUBLIC_HOSTS + DEFAULT_SHORT_NAMES}
@@ -126,9 +128,10 @@ DEFAULT_GOTOS = [
     ("mailpit", "https://mailpit.rohan.run.place/", "Mailpit", "Developer email capture & SMTP testing inbox", "AI & Dev", "inbox", 1),
     ("auth", "https://auth.rohan.run.place/", "SSO Portal", "Authelia Single Sign-On identity portal", "Administration", "shield", 1),
     ("browser", "https://browser.rohan.run.place/", "Cloud Browser", "SSO-gated isolated Linux cloud browser sessions", "Workspaces", "globe", 1),
-    ("goto", "http://browser-gateway:8080/gotos", "In-House DNS", "Firm-wide short names & DNS gotos manager", "Network", "compass", 1),
-    ("go", "http://browser-gateway:8080/gotos", "In-House DNS", "Firm-wide short names & DNS gotos manager", "Network", "compass", 1),
+    ("goto", "https://goto.rohan.run.place/gotos", "In-House DNS", "Firm-wide short names & DNS gotos manager", "Network", "compass", 1),
+    ("go", "https://goto.rohan.run.place/gotos", "In-House DNS", "Firm-wide short names & DNS gotos manager", "Network", "compass", 1),
     ("firewall", "https://firewall.rohan.run.place/", "Firewall & Traffic Limiter", "AdGuard Home DNS firewall, query inspector & Squid traffic control", "Infrastructure", "shield", 1),
+    ("internal", "https://internal.rohan.run.place/", "Internal Homelab Hub", "Internal-only applications, developer portals and services", "Administration", "layers", 1),
 ]
 
 _client: Optional[docker.DockerClient] = None
@@ -186,7 +189,7 @@ def init_db() -> None:
             """
         )
         cols = {row["name"] for row in conn.execute("PRAGMA table_info(sessions)").fetchall()}
-        for col, coltype in [("groups", "TEXT"), ("display_name", "TEXT"), ("email", "TEXT")]:
+        for col, coltype in [("groups", "TEXT"), ("display_name", "TEXT"), ("email", "TEXT"), ("authelia_cookie", "TEXT")]:
             if col not in cols:
                 try:
                     conn.execute(f"ALTER TABLE sessions ADD COLUMN {col} {coltype}")
@@ -406,6 +409,11 @@ def write_policies(user: str) -> str:
     path = os.path.join(directory, "policies.json")
     policies = {
         "policies": {
+            "Certificates": {
+                "Install": [
+                    "/usr/lib/firefox/distribution/internal-ca.crt"
+                ]
+            },
             "Proxy": {
                 "Mode": "autoConfig",
                 "AutoConfigURL": "http://browser-gateway:8080/pac",
@@ -448,6 +456,7 @@ def write_policies(user: str) -> str:
                 "network.proxy.allow_hijacking_localhost": {"Value": False, "Status": "locked"},
                 "browser.fixup.alternate.enabled": {"Value": False, "Status": "locked"},
                 "browser.fixup.dns_first_for_single_words": {"Value": True, "Status": "locked"},
+                "security.enterprise_roots.enabled": {"Value": True, "Status": "locked"},
                 "browser.startup.homepage": {
                     "Value": "http://browser-gateway:8080/portal",
                     "Status": "locked",
@@ -499,23 +508,25 @@ def upsert_session(
     groups: str = "admins,apps-all,ai-dev-core,browser",
     display_name: str = "",
     email: str = "",
+    authelia_cookie: str = "",
 ) -> None:
     now = int(time.time())
     display_name = display_name or user.title()
     email = email or f"{user}@rohan.run.place"
     execute(
         """
-        INSERT INTO sessions (username, ip, container, groups, display_name, email, created_at, last_seen)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO sessions (username, ip, container, groups, display_name, email, authelia_cookie, created_at, last_seen)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(username) DO UPDATE SET
             ip = excluded.ip,
             container = excluded.container,
             groups = excluded.groups,
             display_name = excluded.display_name,
             email = excluded.email,
+            authelia_cookie = CASE WHEN excluded.authelia_cookie != '' THEN excluded.authelia_cookie ELSE sessions.authelia_cookie END,
             last_seen = excluded.last_seen
         """,
-        (user, ip, name, groups, display_name, email, now, now),
+        (user, ip, name, groups, display_name, email, authelia_cookie, now, now),
     )
 
 
@@ -542,6 +553,7 @@ def create_container(user: str, ip: str) -> None:
         volumes={
             f"{name}-config": {"bind": "/config", "mode": "rw"},
             policies: {"bind": "/usr/lib/firefox/distribution/policies.json", "mode": "ro"},
+            "/home/ubuntu/Workspace/browser/internal-ca.crt": {"bind": "/usr/lib/firefox/distribution/internal-ca.crt", "mode": "ro"},
         },
         extra_hosts=all_hosts,
         dns=[GATEWAY_IP, "172.30.0.5"],
@@ -580,7 +592,7 @@ async def wait_healthy(ip: str, timeout: int = 120) -> bool:
     return False
 
 
-async def ensure_session(user: str, groups: str = "admins,apps-all,ai-dev-core,browser") -> str:
+async def ensure_session(user: str, groups: str = "admins,apps-all,ai-dev-core,browser", authelia_cookie: str = "") -> str:
     name = f"ff-{user}"
     async with lock_for(user):
         try:
@@ -604,7 +616,7 @@ async def ensure_session(user: str, groups: str = "admins,apps-all,ai-dev-core,b
                 raise RuntimeError("container has no browser-net address")
             if not await wait_healthy(ip):
                 raise RuntimeError("session did not become healthy")
-            upsert_session(user, ip, name, groups=groups)
+            upsert_session(user, ip, name, groups=groups, authelia_cookie=authelia_cookie)
             await asyncio.to_thread(render_squid_acl, user, ip)
             return f"{name}:{SELKIES_PORT}"
 
@@ -616,7 +628,7 @@ async def ensure_session(user: str, groups: str = "admins,apps-all,ai-dev-core,b
         await asyncio.to_thread(create_container, user, ip)
         if not await wait_healthy(ip):
             raise RuntimeError("session did not become healthy")
-        upsert_session(user, ip, name, groups=groups)
+        upsert_session(user, ip, name, groups=groups, authelia_cookie=authelia_cookie)
         await asyncio.to_thread(render_squid_acl, user, ip)
         return f"{name}:{SELKIES_PORT}"
 
@@ -853,6 +865,11 @@ PORTAL_HTML = """<!doctype html>
       <div class="tile-name">SSO Portal</div>
       <div class="tile-desc">Authelia Single Sign-On identity portal</div>
     </a>
+    <a class="tile" href="https://internal.rohan.run.place/">
+      <div class="tile-top"><span class="dot" style="background:#06b6d4;"></span><span class="tile-goto">internal/</span></div>
+      <div class="tile-name">Internal Hub</div>
+      <div class="tile-desc">Internal-only applications and developer portal</div>
+    </a>
     <a class="tile" href="https://firewall.rohan.run.place/">
       <div class="tile-top"><span class="dot" style="background:#10b981;"></span><span class="tile-goto">firewall/</span></div>
       <div class="tile-name">Firewall & Proxy</div>
@@ -870,6 +887,19 @@ PORTAL_HTML = """<!doctype html>
   <div id="sandboxes" class="muted">Loading sandboxes…</div>
 </main>
 <script>
+// Silent SSO Pre-authentication handshake for cloud browser session
+(function() {
+  const ssoEndpoints = [
+    'https://auth.rohan.run.place/portal-sso-init',
+    'https://user.rohan.run.place/auth/sso-login',
+    'https://portainer.rohan.run.place/auth/sso-login',
+    'https://firewall.rohan.run.place/auth/sso-login'
+  ];
+  ssoEndpoints.forEach(url => {
+    fetch(url, { method: 'GET', credentials: 'include', mode: 'no-cors' }).catch(()=>{});
+  });
+})();
+
 function launchGoto() {
   const val = document.getElementById('quickGoto').value.trim();
   if (val) window.location.href = '/resolve-goto?keyword=' + encodeURIComponent(val);
@@ -1497,12 +1527,13 @@ async def internal_authz(request: Request):
     client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "")
 
     if client_ip.startswith("172.30.0."):
-        row = query("SELECT username, groups, display_name, email FROM sessions WHERE ip = ?", (client_ip,))
+        row = query("SELECT username, groups, display_name, email, authelia_cookie FROM sessions WHERE ip = ?", (client_ip,))
         if row:
             username = row[0]["username"]
             groups = row[0]["groups"] or "admins,apps-all,ai-dev-core,browser"
             display_name = row[0]["display_name"] or username.title()
             email = row[0]["email"] or f"{username}@rohan.run.place"
+            auth_cookie = row[0]["authelia_cookie"] or ""
 
             # Check admin-only host protection
             target_host = (request.headers.get("x-forwarded-host") or "").split(":")[0].strip()
@@ -1513,15 +1544,20 @@ async def internal_authz(request: Request):
 
             execute("UPDATE sessions SET last_seen = ? WHERE ip = ?", (int(time.time()), client_ip))
 
+            resp_headers = {
+                "Remote-User": username,
+                "Remote-Groups": groups,
+                "Remote-Name": display_name,
+                "Remote-Email": email,
+                "X-Browser-Session": "active",
+            }
+            if auth_cookie:
+                resp_headers["X-Authelia-Session"] = auth_cookie
+                resp_headers["X-Authelia-Cookie"] = f"authelia_session={auth_cookie}"
+
             return Response(
                 status_code=200,
-                headers={
-                    "Remote-User": username,
-                    "Remote-Groups": groups,
-                    "Remote-Name": display_name,
-                    "Remote-Email": email,
-                    "X-Browser-Session": "active",
-                },
+                headers=resp_headers,
             )
 
     skip = {
@@ -1596,8 +1632,16 @@ async def authorize(request: Request):
     if not safe:
         return Response(status_code=403)
 
+    auth_cookie = request.cookies.get("authelia_session") or ""
+    if not auth_cookie:
+        raw_cookie = request.headers.get("cookie") or ""
+        for part in raw_cookie.split(";"):
+            if part.strip().startswith("authelia_session="):
+                auth_cookie = part.strip().split("=", 1)[1]
+                break
+
     try:
-        upstream = await ensure_session(safe, groups=groups_hdr)
+        upstream = await ensure_session(safe, groups=groups_hdr, authelia_cookie=auth_cookie)
     except CapacityError as exc:
         log.info("capacity reached for %s: %s", safe, exc)
         return Response(status_code=429, content="all browser slots are busy")
