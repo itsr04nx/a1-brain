@@ -403,6 +403,52 @@ svg.salesskip-geo-lines rect,
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
 }
 
+/* -------------------------------------------------------------------------
+   PASSKEY SIGN-IN BUTTON & OR SEPARATOR (PASSKEYS ENABLED)
+   ------------------------------------------------------------------------- */
+#passkey-sign-in-button {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  font-weight: 600 !important;
+  font-size: 0.925rem !important;
+  height: 44px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.15s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+  width: 100% !important;
+}
+
+#passkey-sign-in-button:hover {
+  background-color: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+#passkey-sign-in-button svg {
+  color: #2563eb !important;
+  stroke: #2563eb !important;
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0 !important;
+}
+
+div:has(> #passkey-sign-in-button) {
+  margin-top: 2px !important;
+}
+
+#first-factor-stage .relative.flex.items-center.py-2 span.uppercase {
+  color: #94a3b8 !important;
+  font-size: 0.775rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+}
+
 .salesskip-forget-wrap {
   text-align: center;
   font-size: 0.85rem;
