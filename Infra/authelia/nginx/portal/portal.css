@@ -1,6 +1,6 @@
 /* ==========================================================================
    Rohan Run Place - Unified SSO & Homelab Portal Theme
-   Modern Split-Screen with Unsplash Photography & Crisp Light Enterprise Theme
+   Modern Split-Screen with Photography & Blue-Accented Enterprise Light Theme
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
@@ -26,7 +26,7 @@ body[data-theme="dark"],
   --color-danger-bg: #fee2e2;
   --radius-sm: 8px;
 
-  /* Authelia Tailwind v4 Overrides for pure, crisp light theme */
+  /* Authelia Tailwind v4 Overrides for pure, crisp light theme with royal blue accents */
   --background: #f8fafc !important;
   --foreground: #0f172a !important;
   --card: #ffffff !important;
@@ -39,14 +39,14 @@ body[data-theme="dark"],
   --secondary-foreground: #1e293b !important;
   --muted: #f1f5f9 !important;
   --muted-foreground: #64748b !important;
-  --accent: #f1f5f9 !important;
-  --accent-foreground: #0f172a !important;
+  --accent: #eff6ff !important;
+  --accent-foreground: #2563eb !important;
   --destructive: #dc2626 !important;
   --destructive-foreground: #ffffff !important;
   --border: #e2e8f0 !important;
-  --input: #e2e8f0 !important;
+  --input: #cbd5e1 !important;
   --ring: #2563eb !important;
-  --custom-icon: #0f172a !important;
+  --custom-icon: #2563eb !important;
   --divider: #e2e8f0 !important;
   color-scheme: light !important;
 }
@@ -205,12 +205,14 @@ header {
   z-index: 2;
   width: 44px;
   height: 44px;
+  background: transparent !important;
 }
 
 .salesskip-star-icon svg {
   width: 100%;
   height: 100%;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  background: transparent !important;
 }
 
 .salesskip-hero-content {
@@ -218,6 +220,10 @@ header {
   z-index: 2;
   margin-top: auto;
   margin-bottom: 24px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 .salesskip-hero-title {
@@ -228,6 +234,7 @@ header {
   color: #ffffff !important;
   letter-spacing: -0.03em !important;
   margin: 0 !important;
+  background: transparent !important;
 }
 
 .salesskip-hero-desc {
@@ -236,6 +243,7 @@ header {
   color: rgba(255, 255, 255, 0.9) !important;
   margin: 16px 0 0 0 !important;
   max-width: 380px !important;
+  background: transparent !important;
 }
 
 .wave-emoji {
@@ -262,17 +270,36 @@ header {
   color: rgba(255, 255, 255, 0.75);
   font-weight: 400;
   letter-spacing: 0.01em;
+  background: transparent !important;
 }
 
+/* Geometric wireframe lines strictly transparent with NO white background */
+svg.salesskip-geo-lines,
 .salesskip-geo-lines {
-  position: absolute;
-  right: -80px;
-  bottom: -60px;
-  width: 440px;
-  height: 440px;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.8;
+  position: absolute !important;
+  right: -80px !important;
+  bottom: -60px !important;
+  width: 440px !important;
+  height: 440px !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  opacity: 0.8 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  fill: none !important;
+}
+
+svg.salesskip-geo-lines rect,
+.salesskip-geo-lines rect {
+  fill: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 /* ==========================================================================
@@ -426,7 +453,6 @@ header {
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
-  max-width: 100% !important;
   width: 100% !important;
 }
 
@@ -471,31 +497,53 @@ header {
 }
 
 /* ==========================================================================
-   6. SETTINGS WINDOW & SIDEBAR DRAWER (LIGHT ENTERPRISE THEME)
+   6. SETTINGS WINDOW & BLUE STANDARD ACCENT THEME
    ========================================================================== */
 
-/* Top Navigation Bar */
+/* Standard Royal Blue Top Navigation Bar in Settings */
 nav.fixed.top-0,
 nav.fixed.top-0.bg-primary {
-  background-color: #ffffff !important;
-  border-bottom: 1px solid #e2e8f0 !important;
-  color: #0f172a !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  background-color: #2563eb !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25) !important;
 }
 
 nav.fixed.top-0 h6 {
-  color: #0f172a !important;
-  font-weight: 600 !important;
-  font-size: 1.1rem !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1.15rem !important;
+  letter-spacing: -0.01em !important;
 }
 
 #settings-menu {
-  color: #0f172a !important;
+  color: #ffffff !important;
   border-radius: 8px !important;
 }
 
 #settings-menu:hover {
-  background-color: #f1f5f9 !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.btn-portal-back {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 6px 14px !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  margin-left: auto !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.btn-portal-back:hover {
+  background-color: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
 }
 
 /* Sidebar Drawer (Sheet) */
@@ -565,6 +613,7 @@ button[id^="settings-menu-"]:has(.text-primary):hover,
 button[id^="settings-menu-"][aria-current="page"] {
   background-color: #eff6ff !important;
   color: #2563eb !important;
+  border-left: 3px solid #2563eb !important;
   border-color: #bfdbfe !important;
   font-weight: 600 !important;
 }
@@ -598,17 +647,17 @@ button#settings-menu-close:hover {
 }
 
 /* ==========================================================================
-   7. SETTINGS MAIN BODY & CARDS (LIGHT THEME)
+   7. SETTINGS MAIN BODY & CARDS (IMAGE 2 FIXES)
    ========================================================================== */
 main.grow {
   background-color: #f8fafc !important;
   min-height: 100vh !important;
   color: #0f172a !important;
-  padding: 80px 24px 40px 24px !important;
+  padding: 84px 24px 40px 24px !important;
 }
 
 main.grow > div {
-  max-width: 900px !important;
+  max-width: 920px !important;
   margin: 0 auto !important;
 }
 
@@ -625,14 +674,16 @@ main.grow .bg-card,
 }
 
 [data-slot="card-header"] {
-  padding: 20px 24px 16px 24px !important;
+  padding: 22px 26px 16px 26px !important;
   border-bottom: 1px solid #f1f5f9 !important;
 }
 
-[data-slot="card-title"] {
+[data-slot="card-title"],
+h5.text-xl.font-semibold {
   color: #0f172a !important;
-  font-size: 1.15rem !important;
-  font-weight: 600 !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
 }
 
 [data-slot="card-description"] {
@@ -641,19 +692,214 @@ main.grow .bg-card,
 }
 
 [data-slot="card-content"] {
-  padding: 20px 24px !important;
+  padding: 22px 26px !important;
   color: #0f172a !important;
 }
 
 [data-slot="card-footer"] {
-  padding: 16px 24px !important;
+  padding: 16px 26px !important;
   border-top: 1px solid #f1f5f9 !important;
   display: flex !important;
   justify-content: flex-end !important;
   gap: 12px !important;
 }
 
-/* Data grid in TOTP / WebAuthn information */
+/* -------------------------------------------------------------------------
+   PRIMARY "ADD" BUTTONS (IMAGE 3 FIX)
+   ------------------------------------------------------------------------- */
+button[id$="-add"],
+#one-time-password-add,
+#webauthn-credential-add,
+main.grow button.bg-primary,
+button:has(.text-primary-foreground):not(#settings-menu) {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: 1px solid #2563eb !important;
+  border-radius: 8px !important;
+  padding: 8px 20px !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.28) !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+}
+
+button[id$="-add"]:hover,
+main.grow button.bg-primary:hover {
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
+}
+
+button[id$="-add"]:disabled,
+main.grow button.bg-primary:disabled {
+  background-color: #94a3b8 !important;
+  border-color: #94a3b8 !important;
+  color: #ffffff !important;
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------
+   CREDENTIAL CARD LAYOUT & TEXT FIX (IMAGE 3 FIX)
+   ------------------------------------------------------------------------- */
+#one-time-password,
+[id^="webauthn-credential-"],
+div:has(> #one-time-password),
+div:has(> [id^="webauthn-credential-"]) {
+  grid-column: 1 / -1 !important;
+  grid-column: span 12 / span 12 !important;
+  max-width: 680px !important;
+  width: 100% !important;
+  margin-top: 12px !important;
+}
+
+#one-time-password,
+[id^="webauthn-credential-"] {
+  width: 100% !important;
+  min-width: 340px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+#one-time-password:hover,
+[id^="webauthn-credential-"]:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+#one-time-password .p-6,
+[id^="webauthn-credential-"] .p-6 {
+  padding: 18px 24px !important;
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#one-time-password .flex.items-center.h-full.w-full,
+[id^="webauthn-credential-"] .flex.items-center.h-full.w-full {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 16px !important;
+}
+
+#one-time-password .shrink-0,
+[id^="webauthn-credential-"] .shrink-0 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  background-color: #eff6ff !important;
+  border-radius: 10px !important;
+  color: #2563eb !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+}
+
+#one-time-password .shrink-0 svg,
+[id^="webauthn-credential-"] .shrink-0 svg {
+  width: 24px !important;
+  height: 24px !important;
+  stroke: #2563eb !important;
+  color: #2563eb !important;
+}
+
+#one-time-password .flex-1.min-w-0,
+[id^="webauthn-credential-"] .flex-1.min-w-0 {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+#one-time-password [id$="-description"],
+[id^="webauthn-credential-"] [id$="-description"] {
+  color: #0f172a !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  display: inline-block !important;
+}
+
+#one-time-password span.text-muted-foreground,
+[id^="webauthn-credential-"] span.text-muted-foreground {
+  color: #64748b !important;
+  white-space: nowrap !important;
+  font-size: 0.825rem !important;
+  display: block !important;
+  line-height: 1.5 !important;
+  margin-top: 2px !important;
+}
+
+/* Info and Delete action icon buttons on credential card */
+#one-time-password button,
+[id^="webauthn-credential-"] button {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+  border-radius: 6px !important;
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+}
+
+#one-time-password button:hover,
+[id^="webauthn-credential-"] button:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+#one-time-password button:has(svg path[d*="3 6"]),
+[id^="webauthn-credential-"] button:has(svg path[d*="3 6"]),
+button[id*="delete"] {
+  color: #dc2626 !important;
+}
+
+#one-time-password button:has(svg path[d*="3 6"]):hover,
+[id^="webauthn-credential-"] button:has(svg path[d*="3 6"]):hover {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #b91c1c !important;
+}
+
+/* -------------------------------------------------------------------------
+   OPTIONS CARD (RADIO BUTTONS)
+   ------------------------------------------------------------------------- */
+div:has(> input[type="radio"]) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-top: 8px !important;
+}
+
+input[type="radio"] {
+  accent-color: #2563eb !important;
+  width: 18px !important;
+  height: 18px !important;
+  cursor: pointer !important;
+}
+
+/* Data grid in extended info modal */
 .grid.grid-cols-12 {
   background: #f8fafc !important;
   border-radius: 8px !important;
@@ -698,44 +944,6 @@ input:focus {
   outline: none !important;
 }
 
-/* Buttons in Settings */
-[data-slot="button"],
-main.grow button,
-[data-slot="dialog-content"] button {
-  border-radius: 8px !important;
-  font-weight: 500 !important;
-  transition: all 0.15s ease !important;
-}
-
-[data-slot="button"].bg-primary,
-main.grow button.bg-primary,
-button:has(.text-primary-foreground):not(#settings-menu) {
-  background-color: #2563eb !important;
-  color: #ffffff !important;
-  border: none !important;
-  padding: 9px 18px !important;
-}
-
-[data-slot="button"].bg-primary:hover,
-main.grow button.bg-primary:hover {
-  background-color: #1d4ed8 !important;
-}
-
-/* Destructive / Delete buttons */
-button.text-destructive,
-button.bg-destructive,
-[data-slot="button"].bg-destructive {
-  background-color: #fee2e2 !important;
-  color: #dc2626 !important;
-  border: 1px solid #fecaca !important;
-}
-
-button.text-destructive:hover,
-button.bg-destructive:hover {
-  background-color: #dc2626 !important;
-  color: #ffffff !important;
-}
-
 /* Modals & Dialogs (Session elevation, passkey confirmation) */
 [data-slot="dialog-content"] {
   background-color: #ffffff !important;
@@ -762,11 +970,10 @@ button.bg-destructive:hover {
   backdrop-filter: blur(2px) !important;
 }
 
-/* QR Code Display for TOTP */
-img[alt*="QR"],
-img[alt*="qr"],
-svg:has(rect),
-div:has(> img[src*="data:image"]) {
+/* QR Code Display for TOTP (Strictly scoped - Never matches hero SVG) */
+[data-slot="dialog-content"] img[src^="data:image"],
+.qr-code-wrapper img,
+div:has(> img[alt*="QR"]) {
   background: #ffffff !important;
   padding: 12px !important;
   border-radius: 8px !important;
@@ -926,27 +1133,6 @@ code, pre, .font-mono {
 }
 
 .btn-settings:hover {
-  background-color: #e2e8f0;
-  color: #0f172a;
-}
-
-.btn-portal-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: #f1f5f9;
-  color: #334155;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  text-decoration: none;
-  margin-left: auto;
-  border: 1px solid #e2e8f0;
-  transition: background-color 0.15s ease;
-}
-
-.btn-portal-back:hover {
   background-color: #e2e8f0;
   color: #0f172a;
 }

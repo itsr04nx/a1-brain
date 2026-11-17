@@ -257,11 +257,11 @@
         </div>
 
         <!-- Concentric geometric curved wireframes in background -->
-        <svg class="salesskip-geo-lines" viewBox="0 0 500 500" fill="none">
-          <rect x="140" y="40" width="320" height="420" rx="42" transform="rotate(20 140 40)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
-          <rect x="175" y="70" width="300" height="390" rx="42" transform="rotate(24 175 70)" stroke="rgba(255,255,255,0.11)" stroke-width="1.5"/>
-          <rect x="210" y="100" width="280" height="360" rx="42" transform="rotate(28 210 100)" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
-          <rect x="245" y="130" width="260" height="330" rx="42" transform="rotate(32 245 130)" stroke="rgba(255,255,255,0.05)" stroke-width="1.5"/>
+        <svg class="salesskip-geo-lines" viewBox="0 0 500 500" fill="none" style="background:transparent!important;box-shadow:none!important;border:none!important;">
+          <rect x="140" y="40" width="320" height="420" rx="42" transform="rotate(20 140 40)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" fill="none" style="fill:none!important;background:transparent!important;"/>
+          <rect x="175" y="70" width="300" height="390" rx="42" transform="rotate(24 175 70)" stroke="rgba(255,255,255,0.11)" stroke-width="1.5" fill="none" style="fill:none!important;background:transparent!important;"/>
+          <rect x="210" y="100" width="280" height="360" rx="42" transform="rotate(28 210 100)" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" fill="none" style="fill:none!important;background:transparent!important;"/>
+          <rect x="245" y="130" width="260" height="330" rx="42" transform="rotate(32 245 130)" stroke="rgba(255,255,255,0.05)" stroke-width="1.5" fill="none" style="fill:none!important;background:transparent!important;"/>
         </svg>
       `;
       cardContainer.insertBefore(heroPanel, cardContainer.firstChild);
@@ -354,10 +354,10 @@
           © 2026 ${BRAND_NAME}. All rights reserved.
         </div>
 
-        <svg class="salesskip-geo-lines" viewBox="0 0 500 500" fill="none">
-          <rect x="140" y="40" width="320" height="420" rx="42" transform="rotate(20 140 40)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
-          <rect x="175" y="70" width="300" height="390" rx="42" transform="rotate(24 175 70)" stroke="rgba(255,255,255,0.11)" stroke-width="1.5"/>
-          <rect x="210" y="100" width="280" height="360" rx="42" transform="rotate(28 210 100)" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+        <svg class="salesskip-geo-lines" viewBox="0 0 500 500" fill="none" style="background:transparent!important;box-shadow:none!important;border:none!important;">
+          <rect x="140" y="40" width="320" height="420" rx="42" transform="rotate(20 140 40)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5" fill="none" style="fill:none!important;background:transparent!important;"/>
+          <rect x="175" y="70" width="300" height="390" rx="42" transform="rotate(24 175 70)" stroke="rgba(255,255,255,0.11)" stroke-width="1.5" fill="none" style="fill:none!important;background:transparent!important;"/>
+          <rect x="210" y="100" width="280" height="360" rx="42" transform="rotate(28 210 100)" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" fill="none" style="fill:none!important;background:transparent!important;"/>
         </svg>
       `;
       cardContainer.insertBefore(heroPanel, cardContainer.firstChild);
