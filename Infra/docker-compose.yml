@@ -1,3 +1,4 @@
+# NOTE: secrets redacted. Live values: Infra/secrets/homelab-secrets.tar.gz.age
 services:
   authelia:
     image: authelia/authelia:latest

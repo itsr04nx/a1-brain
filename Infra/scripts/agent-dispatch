@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""agent-dispatch: Unified distributed agent runner for micro-1 and micro-2.
+
+Manages, balances, and monitors agent containers and background workloads
+across micro-1 (100.100.224.19) and micro-2 (100.107.161.3).
+"""
+
+import sys
+import subprocess
+import json
+import argparse
+
+NODES = {
+    "micro-1": {
+        "host": "tcp://100.100.224.19:2375",
+        "ip": "100.100.224.19",
+        "description": "Tailscale Node micro-1 (2 vCPU, 1GB RAM, 36GB Disk)"
+    },
+    "micro-2": {
+        "host": "tcp://100.107.161.3:2375",
+        "ip": "100.107.161.3",
+        "description": "Tailscale Node micro-2 (2 vCPU, 1GB RAM, 35GB Disk)"
+    }
+}
+
+def run_cmd(cmd, check=True):
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+    if check and res.returncode != 0:
+        return None
+    return res.stdout.strip()
+
+def get_node_stats(name):
+    cfg = NODES.get(name)
+    if not cfg:
+        return None
+    cmd = f"docker --context {name} info --format '{{{{json .}}}}'"
+    out = run_cmd(cmd, check=False)
+    if not out:
+        return {"status": "offline", "name": name, "ip": cfg["ip"]}
+    try:
+        data = json.loads(out)
+        containers_running = data.get("ContainersRunning", 0)
+        containers_total = data.get("Containers", 0)
+        ncpu = data.get("NCPU", 2)
+        mem = data.get("MemTotal", 0) / (1024 * 1024)
+        return {
+            "status": "online",
+            "name": name,
+            "ip": cfg["ip"],
+            "running": containers_running,
+            "total": containers_total,
+            "ncpu": ncpu,
+            "mem_mb": int(mem)
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e), "name": name}
+
+def cmd_status(args):
+    print("=" * 65)
+    print("      AGENT WORKLOAD CLUSTER STATUS (micro-1 & micro-2)")
+    print("=" * 65)
+    for name in NODES:
+        stats = get_node_stats(name)
+        if stats.get("status") == "online":
+            print(f"[{name.upper()}] Status: ONLINE ({stats['ip']})")
+            print(f"   CPUs: {stats['ncpu']} | RAM: {stats['mem_mb']}MB")
+            print(f"   Running Agent Containers: {stats['running']} / {stats['total']}")
+        else:
+            print(f"[{name.upper()}] Status: {stats.get('status').upper()} ({stats.get('ip')})")
+        print("-" * 65)
+
+def select_best_node():
+    best_node = None
+    min_load = 999999
+    for name in NODES:
+        stats = get_node_stats(name)
+        if stats and stats.get("status") == "online":
+            running = stats.get("running", 0)
+            if running < min_load:
+                min_load = running
+                best_node = name
+    return best_node or "micro-1"
+
+def cmd_run(args, extra_args):
+    node = args.node
+    if node == "auto":
+        node = select_best_node()
+    print(f"[*] Dispatching workload to remote node [{node}]...")
+    extra_str = " ".join(extra_args)
+    cmd = f"docker --context {node} run {extra_str}"
+    subprocess.run(cmd, shell=True)
+
+def cmd_ps(args):
+    print("=" * 65)
+    print("            RUNNING CONTAINERS ACROSS CLUSTER")
+    print("=" * 65)
+    for name in NODES:
+        print(f"\n--- Node: {name} ---")
+        cmd = f"docker --context {name} ps --format 'table {{{{ .ID }}}}\\t{{{{ .Names }}}}\\t{{{{ .Image }}}}\\t{{{{ .Status }}}}'"
+        out = run_cmd(cmd, check=False)
+        print(out or "No containers running.")
+
+def cmd_prune(args):
+    for name in NODES:
+        print(f"[*] Pruning stopped containers and dangling images on [{name}]...")
+        cmd = f"docker --context {name} container prune -f && docker --context {name} image prune -f"
+        subprocess.run(cmd, shell=True)
+
+def main():
+    parser = argparse.ArgumentParser(description="Distributed Agent Runner for micro-1 and micro-2")
+    subparsers = parser.add_subparsers(dest="command")
+
+    subparsers.add_parser("status", help="Show cluster node status and metrics")
+    subparsers.add_parser("ps", help="List containers across micro-1 and micro-2")
+    subparsers.add_parser("prune", help="Clean up unused containers and dangling images")
+
+    run_parser = subparsers.add_parser("run", help="Run a container on an agent node")
+    run_parser.add_argument("--node", choices=["micro-1", "micro-2", "auto"], default="auto", help="Target node")
+
+    args, unknown = parser.parse_known_args()
+
+    if args.command == "status":
+        cmd_status(args)
+    elif args.command == "ps":
+        cmd_ps(args)
+    elif args.command == "prune":
+        cmd_prune(args)
+    elif args.command == "run":
+        cmd_run(args, unknown)
+    else:
+        cmd_status(args)
+
+if __name__ == "__main__":
+    main()

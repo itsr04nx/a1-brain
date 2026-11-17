@@ -6,13 +6,13 @@
 
   const BASE_APPS = [
     {
-      id: 'browser',
-      name: 'Browser',
-      url: 'https://browser.rohan.run.place/',
-      subdomain: 'browser.rohan.run.place',
+      id: 'myapps',
+      name: 'MyApps',
+      url: 'https://myapps.rohan.run.place/',
+      subdomain: 'myapps.rohan.run.place',
       category: 'Development',
-      logo: '/portal/icons/browser.svg',
-      isAllowed: (u) => u.isAdmin || u.groups.includes('apps-all') || u.groups.includes('ai-dev-core') || u.groups.includes('browser')
+      logo: '/portal/icons/myapps.svg',
+      isAllowed: (u) => u.isAdmin || u.groups.includes('apps-all') || u.groups.includes('ai-dev-core') || u.groups.includes('myapps') || u.groups.includes('browser')
     },
     {
       id: 'portainer',
@@ -155,7 +155,7 @@
           const baseIds = new Set(BASE_APPS.map(a => a.id.toLowerCase()));
           const ignoredKeywords = new Set([
             'auth', 'go', 'goto', 'user', 'users', 'mail', 'webmail', 'snappymail', 'lldap',
-            'browser', 'portainer', 'firewall', 'status', 'internal', 'koel', 'paperclip', 'openhands', 'opencode', 'cockpit', 'mailpit'
+            'browser', 'myapps', 'portainer', 'firewall', 'status', 'internal', 'koel', 'paperclip', 'openhands', 'opencode', 'cockpit', 'mailpit'
           ]);
 
           const dynamicNewApps = [];
@@ -501,11 +501,19 @@
     }
 
     const seenUrls = new Set();
+    const seenNames = new Set();
     const allowedApps = APPS.filter((app) => {
       if (!app.isAllowed(user)) return false;
-      const norm = normalizeUrl(app.url);
-      if (seenUrls.has(norm)) return false;
-      seenUrls.add(norm);
+      const normUrl = normalizeUrl(app.url);
+      const normName = (app.name || '').toLowerCase().trim();
+      // Normalize aliases like 'user' vs 'users' and 'mail' vs 'webmail'
+      const canonicalHost = normUrl.replace(/^users\.rohan\.run\.place/, 'user.rohan.run.place')
+                                   .replace(/^webmail\.rohan\.run\.place/, 'mail.rohan.run.place');
+      if (seenUrls.has(canonicalHost) || seenNames.has(normName)) {
+        return false;
+      }
+      seenUrls.add(canonicalHost);
+      seenNames.add(normName);
       return true;
     });
     const portal = document.createElement('div');

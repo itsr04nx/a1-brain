@@ -1,3 +1,38 @@
+# --- secrets: never commit plaintext -------------------------------------
+# The only secret artifact allowed in this repo is the age-encrypted bundle.
+Infra/secrets/*.tar
+Infra/secrets/*.tar.gz
+Infra/secrets/*.age.tmp
+Infra/secrets/*.key
+!Infra/secrets/age.pub
+
+# live config copies that carry credentials
+Infra/config/authelia/
+Infra/config/lldap/
+Infra/config/dms/
+Infra/config/snappymail/
+Infra/config/nginx/ssl/
+Infra/config/nginx/default.conf
+Infra/authelia/nginx/default.conf
+Infra/db-backups/
+Infra/koel/.env
+Infra/browser/adguard/conf/
+Infra/paperclip/config.json
+
+# generic secret material
+*.key
+*.pem
+*.p12
+*.pfx
+*.csr
+*.srl
+*.db
+*.sql
+*.sqlite
+.env
+.env.*
+
+# local scratch
 *.log
 .DS_Store
 *.tmp

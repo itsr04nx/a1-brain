@@ -57,7 +57,7 @@ DB_PATH = os.getenv("DB_PATH", "/data/gateway.db")
 IDLE_MINUTES = int(os.getenv("IDLE_MINUTES", "20"))
 ALLOWED_GROUPS = {
     g.strip().lower()
-    for g in os.getenv("ALLOWED_GROUPS", "admins,apps-all,ai-dev-core,browser").split(",")
+    for g in os.getenv("ALLOWED_GROUPS", "admins,apps-all,ai-dev-core,browser,myapps").split(",")
     if g.strip()
 }
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
@@ -79,6 +79,7 @@ DEFAULT_ALLOW_DOMAINS = (
 
 PUBLIC_HOSTS = [
     "auth.rohan.run.place",
+    "myapps.rohan.run.place",
     "browser.rohan.run.place",
     "mail.rohan.run.place",
     "webmail.rohan.run.place",
@@ -108,6 +109,7 @@ DEFAULT_SHORT_NAMES = [
     "opencode",
     "mailpit",
     "auth",
+    "myapps",
     "browser",
     "goto",
     "go",
@@ -131,7 +133,8 @@ DEFAULT_GOTOS = [
     ("opencode", "https://opencode.rohan.run.place/", "OpenCode", "Cloud VS Code web development environment", "AI & Dev", "code", 1),
     ("mailpit", "https://mailpit.rohan.run.place/", "Mailpit", "Developer email capture & SMTP testing inbox", "AI & Dev", "inbox", 1),
     ("auth", "https://auth.rohan.run.place/", "SSO Portal", "Authelia Single Sign-On identity portal", "Administration", "shield", 1),
-    ("browser", "https://browser.rohan.run.place/", "Cloud Browser", "SSO-gated isolated Linux cloud browser sessions", "Workspaces", "globe", 1),
+    ("myapps", "https://myapps.rohan.run.place/", "MyApps", "Self-service Linux workspace & app store powered by Selkies", "Workspaces", "grid", 1),
+    ("browser", "https://myapps.rohan.run.place/", "MyApps", "Self-service Linux workspace & app store powered by Selkies", "Workspaces", "grid", 1),
     ("goto", "https://goto.rohan.run.place/gotos", "In-House DNS", "Firm-wide short names & DNS gotos manager", "Network", "compass", 1),
     ("go", "https://goto.rohan.run.place/gotos", "In-House DNS", "Firm-wide short names & DNS gotos manager", "Network", "compass", 1),
     ("firewall", "https://firewall.rohan.run.place/", "Firewall & Traffic Limiter", "AdGuard Home DNS firewall, query inspector & Squid traffic control", "Infrastructure", "shield", 1),
@@ -554,7 +557,7 @@ def create_container(user: str, ip: str) -> None:
         FF_IMAGE,
         name=name,
         network=BROWSER_NET,
-        environment={"PUID": "1000", "PGID": "1000", "TZ": TZ},
+        environment={"PUID": "1000", "PGID": "1000", "TZ": TZ, "SELKIES_DESKTOP": "true", "PIXELFLUX_WAYLAND": "true"},
         volumes={
             f"{name}-config": {"bind": "/config", "mode": "rw"},
             policies: {"bind": "/usr/lib/firefox/distribution/policies.json", "mode": "ro"},
@@ -566,11 +569,10 @@ def create_container(user: str, ip: str) -> None:
         mem_limit="1536m",
         nano_cpus=1_000_000_000,
         pids_limit=512,
-        security_opt=["no-new-privileges"],
-        restart_policy={"Name": "no"},
+                restart_policy={"Name": "no"},
         labels={"browser.managed": "true", "browser.user": user},
         cap_drop=["ALL"],
-        cap_add=["CHOWN", "SETUID", "SETGID", "DAC_OVERRIDE", "FOWNER", "KILL"],
+        cap_add=["CHOWN", "SETUID", "SETGID", "DAC_OVERRIDE", "FOWNER", "KILL", "SYS_PTRACE"],
     )
     browser_net = dc().networks.get(BROWSER_NET)
     try:
@@ -746,8 +748,7 @@ def run_bridge(name: str, sandbox: str, port: int, ip: str) -> None:
         auto_remove=True,
         network_mode=f"container:{sandbox}",
         cap_drop=["ALL"],
-        security_opt=["no-new-privileges"],
-        labels={"browser.bridge": "true", "browser.sandbox": sandbox, "browser.port": str(port)},
+                labels={"browser.bridge": "true", "browser.sandbox": sandbox, "browser.port": str(port)},
     )
     log.info("bridge %s -> %s:%s", name, ip, port)
 

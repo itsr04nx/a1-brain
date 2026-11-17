@@ -11,7 +11,7 @@ API_URL = "https://api.dnsexit.com/dns/"
 DDNS_URL = "https://api.dnsexit.com/dns/ud/"
 
 # Your config
-DEFAULT_API_KEY = "__REDACTED__"
+DEFAULT_API_KEY = ""  # set DNSEXIT_API_KEY or pass --api-key
 DEFAULT_DOMAIN = "rohan.run.place"
 
 

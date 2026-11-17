@@ -1,35 +1,50 @@
 #!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# backup.sh - snapshot live databases and rebuild the encrypted secret bundle.
+#
+# Nothing is written to the repository in plaintext. The only artifact that
+# lands in the repo is Infra/secrets/homelab-secrets.tar.gz.age
+# ---------------------------------------------------------------------------
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INFRA_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-WORKSPACE="/home/ubuntu/Workspace/authelia"
+SNAPSHOT_DIR="${SNAPSHOT_DIR:-$HOME/.cache/a1-brain/snapshots}"
+WORKSPACE="${WORKSPACE:-/home/ubuntu/Workspace/authelia}"
 
-echo "Creating live backup of homelab databases and configs..."
-python3 -c "
-import sqlite3, shutil
+mkdir -p "$SNAPSHOT_DIR"
 
-# LLDAP
-con = sqlite3.connect('${WORKSPACE}/data/lldap/users.db')
-with open('${INFRA_DIR}/db-backups/lldap_users.sql', 'w') as f:
-    for line in con.iterdump():
-        f.write('%s\n' % line)
-con.close()
-shutil.copy2('${WORKSPACE}/data/lldap/users.db', '${INFRA_DIR}/db-backups/lldap_users.db')
+echo "Snapshotting SQLite databases (consistent, read-only source)..."
+sudo python3 - "$SNAPSHOT_DIR" "$WORKSPACE" <<'PY'
+import os
+import sqlite3
+import sys
 
-# Authelia
-con = sqlite3.connect('${WORKSPACE}/config/authelia.db')
-with open('${INFRA_DIR}/db-backups/authelia.sql', 'w') as f:
-    for line in con.iterdump():
-        f.write('%s\n' % line)
-con.close()
-shutil.copy2('${WORKSPACE}/config/authelia.db', '${INFRA_DIR}/db-backups/authelia.db')
-print('SQLite databases successfully dumped to SQL & SQLite snapshots.')
-"
+out, ws = sys.argv[1], sys.argv[2]
+pairs = [
+    (os.path.join(ws, "config/authelia.db"), "authelia.db"),
+    (os.path.join(ws, "data/lldap/users.db"), "lldap_users.db"),
+]
 
-# Sync updated compose and configs
-cp "${WORKSPACE}/docker-compose.yml" "${INFRA_DIR}/docker-compose.yml"
-cp "${WORKSPACE}/config/configuration.yml" "${INFRA_DIR}/config/authelia/configuration.yml"
-cp "${WORKSPACE}/nginx/default.conf" "${INFRA_DIR}/config/nginx/default.conf"
+for src, name in pairs:
+    if not os.path.exists(src):
+        print(f"  skip (missing): {src}")
+        continue
+    dst = os.path.join(out, name)
+    source = sqlite3.connect(f"file:{src}?mode=ro", uri=True)
+    target = sqlite3.connect(dst)
+    with target:
+        source.backup(target)
+    target.close()
+    source.close()
+    print(f"  snapshotted: {name}")
+PY
 
-echo "Homelab state backed up into ${INFRA_DIR}."
+echo
+echo "Rebuilding encrypted bundle..."
+"${INFRA_DIR}/scripts/secrets.sh" build
+
+echo
+echo "Done."
+echo "Commit Infra/secrets/homelab-secrets.tar.gz.age if it changed:"
+echo "  git add Infra/secrets/homelab-secrets.tar.gz.age && git commit -m 'refresh encrypted secrets'"

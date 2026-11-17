@@ -138,3 +138,23 @@ To ensure 100% resilience across server restarts, hardware reboots, and network 
    5. `uptime-kuma` (Status Monitor)
    6. `openhands-app` (Coding Agent)
    Shutdown uses `docker compose stop` to preserve network bindings and avoid destroying external bridge networks.
+
+### 4. Distributed Compute & Agent Execution Nodes (`micro-1` & `micro-2`)
+To offload agent execution, model tool invocation, testing suites, and sandbox runners from `a1`:
+- **`micro-1`** (`100.100.224.19`): Remote Docker execution worker node connected over secure Tailscale mesh. Bound to `100.100.224.19:2375` with `docker-socket-proxy`.
+- **`micro-2`** (`100.107.161.3`): Remote Docker execution worker node connected over secure Tailscale mesh. Bound to `100.107.161.3:2375` with `docker-socket-proxy`.
+- **Docker Contexts on `a1`**:
+  - `docker --context micro-1`
+  - `docker --context micro-2`
+- **Agent Dispatcher (`/usr/local/bin/agent-dispatch`)**:
+  - `agent-dispatch status`: Monitors node health, CPU, memory, and container density.
+  - `agent-dispatch run --node auto|micro-1|micro-2 <docker run args>`: Automatically balances workloads to the least-loaded remote node.
+  - `agent-dispatch ps`: Aggregates running agent containers across the cluster.
+  - `agent-dispatch prune`: Cleans up stopped containers and dangling images.
+
+### 5. MyApps: Selkies Self-Service Desktop & App Store
+- Replaces raw single-purpose browser instances with a full-fledged Linux desktop workspace powered by **Selkies 2.2.1** and `labwc` compositor.
+- **Subdomain**: `https://myapps.rohan.run.place/` (with automatic 301 redirection from legacy `browser.rohan.run.place`).
+- **Self-Service Application Management**: Users can launch the built-in "Manage Apps" / Apps panel to install and run any Linux tools, IDEs, utilities, and software packages on-demand (`proot-apps` container isolation).
+- **Access Control**: Governed by the dedicated LLDAP group `myapps`, with users `admin`, `rohan`, and `sadik` assigned.
+- **SSO Portal Tile**: Modern multi-gradient app grid icon (`myapps.svg`) placed prominently in the SSO portal.
