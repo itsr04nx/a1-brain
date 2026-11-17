@@ -197,15 +197,43 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
             if not target or target.startswith("/auth/sso-login"):
                 target = "/"
 
-            cookie_portainer = f"portainer_api_key={p_token}; Path=/; SameSite=Lax; HttpOnly; Max-Age=28800"
+            cookie_portainer = f"portainer_api_key={p_token}; Path=/; SameSite=Lax; Max-Age=28800"
             sys.stderr.write(f"[PORTAINER SSO] User {username} autologin -> {target}\n")
             sys.stderr.flush()
 
-            self.send_response(302)
-            self.send_header("Location", target)
+            html_body = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Portainer SSO</title>
+<script>
+(function() {{
+    const token = "{p_token}";
+    try {{
+        localStorage.setItem("portainer.USER_ID", "1");
+        sessionStorage.setItem("portainer.JWT", token);
+        sessionStorage.setItem("jwt", token);
+    }} catch(e) {{}}
+    window.location.replace("{target}");
+}})();
+</script>
+</head>
+<body style="background:#0f172a;color:#94a3b8;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+    <div style="text-align:center;">
+        <h2 style="color:#38bdf8;margin-bottom:8px;">Authenticating Portainer CE...</h2>
+        <p style="font-size:14px;">Establishing administrator session...</p>
+    </div>
+</body>
+</html>""".encode("utf-8")
+
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(html_body)))
             self.send_header("Set-Cookie", cookie_portainer)
             self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
             self.end_headers()
+            if not is_head:
+                self.wfile.write(html_body)
             return
 
         if path == "/portainer/logout":
