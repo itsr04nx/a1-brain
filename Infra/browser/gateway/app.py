@@ -21,6 +21,8 @@ import html
 import json
 import logging
 import os
+import uuid
+import datetime
 import re
 import sqlite3
 import time
@@ -1812,10 +1814,47 @@ def check_origin(request: Request) -> None:
 # --------------------------------------------------------------------------- #
 # app lifespan & routing
 # --------------------------------------------------------------------------- #
+def sync_lldap_groups():
+    lldap_db = "/lldap_data/users.db"
+    if not os.path.exists(lldap_db):
+        return
+    try:
+        conn = sqlite3.connect(lldap_db, timeout=5.0)
+        cursor = conn.cursor()
+        existing_groups = {
+            row[1].lower(): row[0]
+            for row in cursor.execute("SELECT group_id, lowercase_display_name FROM groups")
+        }
+
+        rows = query("SELECT keyword FROM gotos")
+        now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")
+        for r in rows:
+            kw = r["keyword"].lower()
+            if kw not in existing_groups and kw not in ("go", "auth"):
+                guid = str(uuid.uuid4())
+                cursor.execute(
+                    "INSERT INTO groups (display_name, creation_date, uuid, lowercase_display_name, modified_date) VALUES (?, ?, ?, ?, ?)",
+                    (kw, now_str, guid, kw, now_str)
+                )
+                existing_groups[kw] = cursor.lastrowid
+
+        admin_users = ["admin", "rohan", "jatin"]
+        for u in admin_users:
+            for gname, gid in existing_groups.items():
+                cursor.execute("INSERT OR IGNORE INTO memberships (user_id, group_id) VALUES (?, ?)", (u, gid))
+
+        conn.commit()
+        conn.close()
+        log.info("LLDAP groups synchronized successfully")
+    except Exception as e:
+        log.warning("Could not sync LLDAP groups: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     global _http
     init_db()
+    sync_lldap_groups()
     _http = httpx.AsyncClient(verify=False, timeout=httpx.Timeout(10.0, connect=5.0))
     reaper_task = asyncio.create_task(reaper())
 
@@ -2103,6 +2142,21 @@ async def resolve_goto(request: Request, host: str = "", uri: str = "", keyword:
     raise HTTPException(status_code=404, detail=f"goto '{kw}' not found")
 
 
+@app.get("/api/groups")
+async def api_groups():
+    lldap_db = "/lldap_data/users.db"
+    if not os.path.exists(lldap_db):
+        return {"groups": []}
+    try:
+        conn = sqlite3.connect(lldap_db, timeout=3.0)
+        cursor = conn.cursor()
+        rows = cursor.execute("SELECT group_id, display_name FROM groups ORDER BY display_name ASC").fetchall()
+        conn.close()
+        return {"groups": [{"id": r[0], "name": r[1]} for r in rows]}
+    except Exception as e:
+        return {"error": str(e), "groups": []}
+
+
 @app.get("/api/gotos")
 async def api_get_gotos():
     rows = query("SELECT keyword, target_url, title, description, category, icon, is_system FROM gotos ORDER BY is_system DESC, keyword ASC")
@@ -2122,6 +2176,7 @@ async def api_save_goto(request: Request):
         raise HTTPException(status_code=400, detail="keyword and target_url are required")
 
     now = int(time.time())
+    sync_lldap_groups()
     execute(
         """
         INSERT INTO gotos (keyword, target_url, title, description, category, icon, is_system, created_at, updated_at)

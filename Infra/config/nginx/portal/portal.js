@@ -4,7 +4,7 @@
 
   const BRAND_NAME = 'Rohan Run Place';
 
-  const APPS = [
+  const BASE_APPS = [
     {
       id: 'browser',
       name: 'Browser',
@@ -13,6 +13,51 @@
       category: 'Development',
       logo: '/portal/icons/browser.svg',
       isAllowed: (u) => u.isAdmin || u.groups.includes('apps-all') || u.groups.includes('ai-dev-core') || u.groups.includes('browser')
+    },
+    {
+      id: 'portainer',
+      name: 'Portainer CE',
+      url: 'https://portainer.rohan.run.place/',
+      subdomain: 'portainer.rohan.run.place',
+      category: 'Infrastructure',
+      logo: '/portal/icons/portainer.svg',
+      isAllowed: (u) => u.isAdmin || u.groups.includes('portainer')
+    },
+    {
+      id: 'firewall',
+      name: 'Firewall & Traffic Limiter',
+      url: 'https://firewall.rohan.run.place/',
+      subdomain: 'firewall.rohan.run.place',
+      category: 'Infrastructure',
+      logo: '/portal/icons/firewall.svg',
+      isAllowed: (u) => u.isAdmin || u.groups.includes('firewall')
+    },
+    {
+      id: 'status',
+      name: 'System Status',
+      url: 'https://status.rohan.run.place/',
+      subdomain: 'status.rohan.run.place',
+      category: 'Infrastructure',
+      logo: '/portal/icons/status.svg',
+      isAllowed: () => true
+    },
+    {
+      id: 'internal',
+      name: 'Internal Homelab Hub',
+      url: 'https://internal.rohan.run.place/',
+      subdomain: 'internal.rohan.run.place',
+      category: 'Administration',
+      logo: '/portal/icons/internal.svg',
+      isAllowed: (u) => u.isAdmin || u.groups.includes('internal') || u.groups.includes('apps-all')
+    },
+    {
+      id: 'goto',
+      name: 'In-House DNS & Gotos',
+      url: 'https://goto.rohan.run.place/gotos',
+      subdomain: 'goto.rohan.run.place',
+      category: 'Infrastructure',
+      logo: '/portal/icons/goto.svg',
+      isAllowed: (u) => u.isAdmin || u.groups.includes('goto') || u.groups.includes('apps-all')
     },
     {
       id: 'koel',
@@ -60,15 +105,6 @@
       isAllowed: () => true
     },
     {
-      id: 'portainer',
-      name: 'Portainer',
-      url: 'https://portainer.rohan.run.place/',
-      subdomain: 'portainer.rohan.run.place',
-      category: 'Infrastructure',
-      logo: '/portal/icons/portainer.svg',
-      isAllowed: (u) => u.isAdmin || u.groups.includes('portainer')
-    },
-    {
       id: 'cockpit',
       name: 'Cockpit Console',
       url: 'https://cockpit.rohan.run.place/',
@@ -87,6 +123,58 @@
       isAllowed: (u) => u.isAdmin || u.groups.includes('mailpit')
     }
   ];
+
+  let APPS = [...BASE_APPS];
+
+  async function loadDynamicApps() {
+    try {
+      const res = await fetch('/portal/api/apps', { credentials: 'same-origin' });
+      if (res.ok) {
+        const dynamicList = await res.json();
+        if (Array.isArray(dynamicList) && dynamicList.length > 0) {
+          const list = dynamicList
+            .filter(g => g.keyword !== 'auth' && g.keyword !== 'go')
+            .map(g => {
+              const kw = g.keyword.toLowerCase();
+              const existing = BASE_APPS.find(a => a.id === kw || a.subdomain?.startsWith(kw + '.'));
+              let targetUrl = g.target_url || (existing ? existing.url : `https://${kw}.rohan.run.place/`);
+              let sub = (targetUrl && targetUrl.includes('//')) ? targetUrl.split('/')[2].split(':')[0] : `${kw}.rohan.run.place`;
+              
+              let logo = (existing && existing.logo) ? existing.logo : `/portal/icons/${kw}.svg`;
+              return {
+                id: kw,
+                name: existing ? existing.name : (g.title || kw.toUpperCase()),
+                url: targetUrl,
+                subdomain: sub,
+                category: existing ? existing.category : (g.category || 'Infrastructure'),
+                description: g.description || (existing ? existing.description : ''),
+                logo: logo,
+                isAllowed: (u) => {
+                  if (u.isAdmin) return true;
+                  if (u.groups.includes('apps-all')) return true;
+                  if (u.groups.includes(kw)) return true;
+                  if (existing && existing.isAllowed) return existing.isAllowed(u);
+                  if (['koel', 'snappymail', 'mail', 'webmail', 'lldap', 'user', 'users', 'status'].includes(kw)) return true;
+                  return false;
+                }
+              };
+            });
+
+          const seen = new Set(list.map(a => a.id));
+          for (const base of BASE_APPS) {
+            if (!seen.has(base.id)) {
+              list.push(base);
+            }
+          }
+          APPS = list;
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load dynamic apps from /portal/api/apps:", e);
+    }
+    APPS = [...BASE_APPS];
+  }
 
   async function checkUserSession() {
     try {
@@ -377,7 +465,8 @@
   // -------------------------------------------------------------------------
   // 4. APPLICATION LAUNCHER (AUTHENTICATED)
   // -------------------------------------------------------------------------
-  function renderPortal(user) {
+  async function renderPortal(user) {
+    await loadDynamicApps();
     const root = document.getElementById('root');
     if (root) {
       root.style.display = 'none';
@@ -439,12 +528,12 @@
           </div>
           <div class="category-filter-group" id="portal-category-filters">
             <button class="category-filter-btn active" data-cat="all">All (${allowedApps.length})</button>
-            <button class="category-filter-btn" data-cat="Development">Browser & IDE</button>
-            <button class="category-filter-btn" data-cat="Media">Media</button>
-            <button class="category-filter-btn" data-cat="AI Tools">AI</button>
+            <button class="category-filter-btn" data-cat="Infrastructure">Infrastructure</button>
+            <button class="category-filter-btn" data-cat="Development">Development</button>
+            <button class="category-filter-btn" data-cat="AI Tools">AI Tools</button>
             <button class="category-filter-btn" data-cat="Communication">Mail</button>
+            <button class="category-filter-btn" data-cat="Media">Media</button>
             <button class="category-filter-btn" data-cat="Identity">Identity</button>
-            ${user.isAdmin ? '<button class="category-filter-btn" data-cat="Infrastructure">Admin</button>' : ''}
           </div>
         </div>
 
@@ -554,7 +643,7 @@
   async function start() {
     const user = await checkUserSession();
     if (user) {
-      renderPortal(user);
+      await renderPortal(user);
     } else {
       dispatchEnhancement();
 
@@ -569,7 +658,7 @@
           isCheckingSession = false;
           if (u) {
             observer.disconnect();
-            renderPortal(u);
+            await renderPortal(u);
           }
         }
       });

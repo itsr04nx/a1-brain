@@ -71,6 +71,7 @@ services:
       - /home/ubuntu/Workspace/browser/squid/blocked_domains.txt:/squid_blocked_domains.txt
       - /home/ubuntu/Workspace/browser/data:/data
       - /home/ubuntu/Workspace/browser/gateway/app.py:/app/app.py
+      - /home/ubuntu/Workspace/authelia/data/lldap:/lldap_data:rw
     networks:
       control-net:
       browser-net:
