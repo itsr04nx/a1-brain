@@ -26,6 +26,7 @@ services:
       - "mailpit.rohan.run.place:172.30.0.2"
       - "koel.rohan.run.place:172.30.0.2"
       - "status.rohan.run.place:172.30.0.2"
+      - "paperclip.rohan.run.place:172.30.0.2"
     networks:
       browser-net:
         ipv4_address: 172.30.0.6

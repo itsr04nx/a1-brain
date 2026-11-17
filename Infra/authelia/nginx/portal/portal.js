@@ -69,6 +69,15 @@
       isAllowed: () => true
     },
     {
+      id: 'paperclip',
+      name: 'Paperclip AI Orchestrator',
+      url: 'https://paperclip.rohan.run.place/',
+      subdomain: 'paperclip.rohan.run.place',
+      category: 'AI Tools',
+      logo: '/portal/icons/paperclip.svg',
+      isAllowed: (u) => u.isAdmin || u.groups.includes('paperclip') || u.groups.includes('ai-dev-core') || u.groups.includes('apps-all')
+    },
+    {
       id: 'openhands',
       name: 'OpenHands AI',
       url: 'https://openhands.rohan.run.place/',

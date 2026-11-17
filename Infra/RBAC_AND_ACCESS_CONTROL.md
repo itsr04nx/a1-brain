@@ -274,3 +274,22 @@ Portainer (`portainer.rohan.run.place`) is integrated with the Homelab Single Si
 ### Credentials & Administrative Access
 - **Unified Admin Password**: `admin` / `__REDACTED__`
 - **Enrolled Portainer Administrators**: `admin`, `rohan`, `sadik`
+
+
+### Service Accounts & Agent Orchestration (Paperclip)
+
+#### Service Accounts
+- `svc-paperclip` (Paperclip Orchestrator Service, `svc-paperclip@rohan.run.place`)
+- `svc-agent-dev` (Autonomous Developer Agent, `svc-agent-dev@rohan.run.place`)
+- `svc-agent-ops` (Infrastructure Operations Agent, `svc-agent-ops@rohan.run.place`)
+- `svc-agent-qa` (Verification & QA Agent, `svc-agent-qa@rohan.run.place`)
+
+#### LLDAP Groups
+- `paperclip` (id 28): Access to Paperclip orchestrator UI and API (`https://paperclip.rohan.run.place/`).
+- `service-accounts` (id 29): Non-human service accounts for automated tasks.
+- `agents` (id 30): Autonomous agent worker identities.
+
+#### Permissions & Scopes
+- Service accounts belong to `apps-all`, `ai-dev-core`, `internal`, `mail`, and `mailpit`.
+- Authelia access control grants `service-accounts` and `agents` access to `paperclip`, `internal`, `openhands`, `opencode`, and all subdomains under `*.rohan.run.place`.
+- DMS email inboxes provisioned automatically at `@rohan.run.place`.
