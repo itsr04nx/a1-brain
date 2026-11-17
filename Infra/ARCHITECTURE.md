@@ -98,3 +98,43 @@
 - **Developer Trap (Mailpit)**:
   - Mailpit runs on port 1025 for internal applications requiring dummy email delivery (e.g., Authelia password resets, test notifications).
   - Web UI at `https://mailpit.rohan.run.place/` is strictly locked behind Authelia `group:admins`.
+
+
+## Reboot-Proof Infrastructure & Static IP Mapping
+
+To ensure 100% resilience across server restarts, hardware reboots, and network refreshes:
+1. **Network Persistence (`homelab-networks.service`)**:
+   Runs on boot `After=docker.service` and ensures the 5 custom bridge networks exist with their exact CIDR subnets and gateways before any container initializes:
+   - `authelia_default`: `172.18.0.0/16` (Gateway: `172.18.0.1`)
+   - `browser-net`: `172.30.0.0/24` (Gateway: `172.30.0.1`)
+   - `control-net`: `172.33.0.0/24` (Gateway: `172.33.0.1`)
+   - `browser-internal`: `172.31.0.0/24` (Gateway: `172.31.0.1`)
+   - `egress-net`: `172.32.0.0/24` (Gateway: `172.32.0.1`)
+
+2. **Immutable Static IP Allocation**:
+   Every container has an explicit static `ipv4_address` pinned in its `docker-compose.yml`. Container IPs cannot drift or conflict:
+   - `172.18.0.1`: Host Gateway / SSO Bridge (`lldap_sso_bridge.py`)
+   - `172.18.0.2`: `authelia`
+   - `172.18.0.3`: `mailpit`
+   - `172.18.0.4`: `authelia-nginx` (also `172.30.0.2` on `browser-net`)
+   - `172.18.0.5`: `authelia-redis`
+   - `172.18.0.6`: `mailserver`
+   - `172.18.0.7`: `lldap`
+   - `172.18.0.8`: `snappymail`
+   - `172.18.0.9`: `browser-gateway` (also `172.30.0.4` on `browser-net`, `172.33.0.3` on `control-net`)
+   - `172.18.0.10`: `portainer`
+   - `172.18.0.11`: `uptime-kuma` (also `172.30.0.6` on `browser-net`)
+   - `172.18.0.12`: `paperclip` (also `172.30.0.7` on `browser-net`)
+   - `172.30.0.3`: `squid` (also `172.32.0.3` on `egress-net`)
+   - `172.30.0.5`: `adguard` (also `172.32.0.2` on `egress-net`)
+   - `172.33.0.2`: `docker-socket-proxy`
+
+3. **Deterministic Startup Orchestration (`homelab-stacks.service`)**:
+   Runs on boot `After=docker.service homelab-networks.service` and orchestrates stacks in strict dependency order:
+   1. `authelia` (Auth, Directory, Database, Nginx)
+   2. `browser` (DNS, Firewall, Squid, Browser Gateway)
+   3. `portainer` (Container Management)
+   4. `paperclip` (Agent Orchestrator)
+   5. `uptime-kuma` (Status Monitor)
+   6. `openhands-app` (Coding Agent)
+   Shutdown uses `docker compose stop` to preserve network bindings and avoid destroying external bridge networks.

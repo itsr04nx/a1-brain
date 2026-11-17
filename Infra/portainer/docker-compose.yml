@@ -8,7 +8,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/data
     networks:
-      - authelia_default
+      authelia_default:
+        ipv4_address: 172.18.0.10
     expose:
       - "9000"
 

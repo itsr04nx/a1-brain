@@ -1,0 +1,16 @@
+[Unit]
+Description=Homelab Docker Compose Stacks Boot Orchestrator
+Requires=docker.service homelab-networks.service
+After=docker.service homelab-networks.service network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+ExecStart=/usr/local/bin/homelab-start-stacks.sh
+ExecStop=/usr/local/bin/homelab-stop-stacks.sh
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

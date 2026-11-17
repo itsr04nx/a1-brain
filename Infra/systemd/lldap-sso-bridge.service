@@ -1,0 +1,16 @@
+[Unit]
+Description=LLDAP SSO Auto-login Bridge
+Requires=docker.service
+After=network.target docker.service homelab-stacks.service
+Wants=homelab-stacks.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Workspace/authelia
+ExecStart=/usr/bin/python3 /home/ubuntu/Workspace/authelia/lldap_sso_bridge.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

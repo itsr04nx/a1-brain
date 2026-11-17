@@ -14,6 +14,9 @@ services:
     volumes:
       - ./config:/config
       - ./data:/data
+    networks:
+      authelia_default:
+        ipv4_address: 172.18.0.2
     depends_on:
       - redis
       - lldap
@@ -24,6 +27,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./data/redis:/data
+    networks:
+      authelia_default:
+        ipv4_address: 172.18.0.5
 
   lldap:
     image: nitnelave/lldap:latest
@@ -43,6 +49,9 @@ services:
       - LLDAP_HTTP_URL=https://user.rohan.run.place
     volumes:
       - ./data/lldap:/data
+    networks:
+      authelia_default:
+        ipv4_address: 172.18.0.7
 
   mailpit:
     image: axllent/mailpit:latest
@@ -57,6 +66,9 @@ services:
       - MP_MAX_MESSAGES=5000
     volumes:
       - ./data/mailpit:/data
+    networks:
+      authelia_default:
+        ipv4_address: 172.18.0.3
 
   mailserver:
     image: mailserver/docker-mailserver:17.0.0
@@ -108,6 +120,9 @@ services:
       - NET_ADMIN
     depends_on:
       - lldap
+    networks:
+      authelia_default:
+        ipv4_address: 172.18.0.6
 
   snappymail:
     image: djmaze/snappymail:latest
@@ -119,6 +134,9 @@ services:
       - ./data/snappymail:/var/lib/snappymail
     depends_on:
       - mailserver
+    networks:
+      authelia_default:
+        ipv4_address: 172.18.0.8
 
   nginx:
     image: nginx:alpine
@@ -135,7 +153,8 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/portal:/usr/share/nginx/html/portal:ro
     networks:
-      default:
+      authelia_default:
+        ipv4_address: 172.18.0.4
       browser-net:
         ipv4_address: 172.30.0.2
     depends_on:
@@ -146,5 +165,7 @@ services:
       - snappymail
 
 networks:
+  authelia_default:
+    external: true
   browser-net:
     external: true

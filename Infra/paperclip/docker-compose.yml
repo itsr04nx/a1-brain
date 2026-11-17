@@ -12,7 +12,7 @@ services:
       PAPERCLIP_DEPLOYMENT_MODE: "authenticated"
       PAPERCLIP_DEPLOYMENT_EXPOSURE: "private"
       PAPERCLIP_PUBLIC_URL: "https://paperclip.rohan.run.place"
-      PAPERCLIP_ALLOWED_HOSTNAMES: "paperclip,paperclip.rohan.run.place,172.30.0.7,100.72.142.64,localhost"
+      PAPERCLIP_ALLOWED_HOSTNAMES: "paperclip,paperclip.rohan.run.place,172.30.0.7,172.18.0.12,100.72.142.64,localhost"
       BETTER_AUTH_SECRET: "9f8c6b24d1a73e5f80b4c2e6a9f1d8c37e5b2a0f4d8e6c1a7b3d5f9e2c4a8b1d"
       PAPERCLIP_TOOL_ACTION_SIGNING_SECRET: "3b7e9a1f5c8d2e4b0a6f8c1d3e5a7b9f2c4e6a8d0f1b3d5e7a9c2e4f6a8b0d1e"
       SERVE_UI: "true"
@@ -24,6 +24,7 @@ services:
       browser-net:
         ipv4_address: 172.30.0.7
       authelia_default:
+        ipv4_address: 172.18.0.12
 
 networks:
   browser-net:

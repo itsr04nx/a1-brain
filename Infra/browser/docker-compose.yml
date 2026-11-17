@@ -15,7 +15,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - control-net
+      control-net:
+        ipv4_address: 172.33.0.2
 
   adguard:
     image: adguard/adguardhome:latest
@@ -28,6 +29,7 @@ services:
       browser-net:
         ipv4_address: 172.30.0.5
       egress-net:
+        ipv4_address: 172.32.0.2
 
   squid:
     image: ubuntu/squid:latest
@@ -43,6 +45,7 @@ services:
       browser-net:
         ipv4_address: 172.30.0.3
       egress-net:
+        ipv4_address: 172.32.0.3
     depends_on:
       - adguard
 
@@ -74,9 +77,11 @@ services:
       - /home/ubuntu/Workspace/authelia/data/lldap:/lldap_data:rw
     networks:
       control-net:
+        ipv4_address: 172.33.0.3
       browser-net:
         ipv4_address: 172.30.0.4
       authelia_default:
+        ipv4_address: 172.18.0.9
     depends_on:
       - docker-socket-proxy
       - adguard

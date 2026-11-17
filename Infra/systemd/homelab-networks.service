@@ -1,0 +1,13 @@
+[Unit]
+Description=Ensure Core Homelab Docker Networks Exist with Fixed Subnets
+Requires=docker.service
+After=docker.service
+Before=authelia.service homelab-stacks.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/homelab-ensure-networks.sh
+
+[Install]
+WantedBy=multi-user.target
