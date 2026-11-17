@@ -234,3 +234,43 @@ LLDAP's web interface is a client-side Single Page Application (SPA) written in 
 - **Bridge Script**: `/home/ubuntu/Workspace/authelia/lldap_sso_bridge.py` (mirrored in `Infra/scripts/lldap_sso_bridge.py`)
 - **Reverse Proxy**: `/home/ubuntu/Workspace/authelia/nginx/default.conf` (mirrored in `Infra/config/nginx/default.conf`)
 - **Enrolled Admins**: `admin`, `rohan`, `sadik`
+
+---
+
+## 9. Portainer Container Management SSO Auto-login Architecture
+
+Portainer (`portainer.rohan.run.place`) is integrated with the Homelab Single Sign-On ecosystem using a session cookie bridge:
+- **Portainer Session Cookie**: `portainer_api_key` (`HttpOnly`, `SameSite=Lax`, valid for 8 hours).
+- **Access Authorization**: Restricted to members of `admins`, `portainer`, or `lldap_admin` LDAP groups.
+
+### Request Flow
+```
+[ Browser visits https://portainer.rohan.run.place/ ]
+                     │
+                     ▼
+             [ authelia-nginx ]
+                     │
+     [ auth_request /internal/authelia/authz ]
+         ├─ 401 Unauthorized ──► 302 to https://auth.rohan.run.place/
+         └─ 200 OK (Remote-User: sadik, Remote-Groups: ...)
+                     │
+                     ▼
+     [ Check $cookie_portainer_api_key ]
+         ├─ Missing ──► 302 to /auth/sso-login?rd=$request_uri
+         └─ Present ──► Proxy directly to http://portainer:9000
+                     │
+                     ▼
+        [ /auth/sso-login via Bridge (Port 17171) ]
+        - Validates user group membership (admins or portainer)
+        - Acquires Portainer admin JWT from Portainer API
+        - Responds with 302 to target and Set-Cookie: portainer_api_key=<JWT>
+                     │
+                     ▼
+[ Browser navigates into Portainer with valid session cookie ]
+- Portainer API accepts portainer_api_key
+- Full Container Management Dashboard renders immediately without login screen!
+```
+
+### Credentials & Administrative Access
+- **Unified Admin Password**: `admin` / `__REDACTED__`
+- **Enrolled Portainer Administrators**: `admin`, `rohan`, `sadik`

@@ -9,6 +9,7 @@ import hmac
 import hashlib
 import sqlite3
 import urllib.parse
+import urllib.request
 import os
 import sys
 
@@ -17,13 +18,43 @@ SECRET = "__REDACTED__"
 DB_PATH = "/home/ubuntu/Workspace/authelia/data/lldap/users.db"
 INDEX_PATH = "/home/ubuntu/Workspace/authelia/lldap_index.html"
 
+PORTAINER_URL = "http://172.18.0.10:9000"
+PORTAINER_ADMIN_USER = "admin"
+PORTAINER_ADMIN_PASS = "__REDACTED__"
+
+_portainer_cached_jwt = None
+_portainer_jwt_exp = 0
+
+def get_portainer_jwt():
+    global _portainer_cached_jwt, _portainer_jwt_exp
+    now = time.time()
+    if _portainer_cached_jwt and now < _portainer_jwt_exp - 300:
+        return _portainer_cached_jwt
+
+    try:
+        url = f"{PORTAINER_URL}/api/auth"
+        payload = json.dumps({"Username": PORTAINER_ADMIN_USER, "Password": PORTAINER_ADMIN_PASS}).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        resp = urllib.request.urlopen(req, timeout=5)
+        data = json.loads(resp.read().decode("utf-8"))
+        jwt_token = data.get("jwt")
+        if jwt_token:
+            _portainer_cached_jwt = jwt_token
+            _portainer_jwt_exp = now + 28800  # 8 hours
+            sys.stderr.write(f"[PORTAINER SSO] Acquired fresh admin JWT (expires in 8h)\n")
+            sys.stderr.flush()
+            return jwt_token
+    except Exception as e:
+        sys.stderr.write(f"[PORTAINER SSO ERROR] Getting token: {e}\n")
+        sys.stderr.flush()
+    return None
+
 # Load index.html with safety redirect script injected
 INDEX_HTML = b""
 try:
     if os.path.exists(INDEX_PATH):
         with open(INDEX_PATH, "r", encoding="utf-8") as f:
             raw_html = f.read()
-            # Inject safety check: if SPA router ever gets stuck on /login, bounce to /users
             guard_script = """
     <script>
       if (window.location.pathname === '/login') {
@@ -93,17 +124,6 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
 
-        # 1. Handle Logout
-        if path == "/auth/logout":
-            self.send_response(302)
-            self.send_header("Location", "https://auth.rohan.run.place/logout")
-            self.send_header("Set-Cookie", "token=; Path=/; SameSite=Lax; Max-Age=0")
-            self.send_header("Set-Cookie", "user_id=; Path=/; SameSite=Lax; Max-Age=0")
-            self.send_header("Set-Cookie", "is_admin=; Path=/; SameSite=Lax; Max-Age=0")
-            self.send_header("Set-Cookie", "refresh_token=; Path=/; SameSite=Lax; HttpOnly; Max-Age=0")
-            self.end_headers()
-            return
-
         # Authenticate user via Authelia upstream header
         username = self.headers.get("Remote-User")
         if not username:
@@ -120,7 +140,66 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
         extra_groups = [g.strip() for g in hdr_groups.split(",") if g.strip()]
         all_groups = list(dict.fromkeys(db_groups + extra_groups))
 
-        # Check admin privileges
+        # -------------------------------------------------------------
+        # PORTAINER SSO ROUTES
+        # -------------------------------------------------------------
+        if path == "/portainer/sso-login":
+            # Check authorizations: portainer or admins
+            is_portainer_authorized = ("portainer" in all_groups) or ("admins" in all_groups) or ("lldap_admin" in all_groups)
+            if not is_portainer_authorized:
+                self.send_response(403)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                if not is_head:
+                    self.wfile.write(b"<h1>403 Forbidden</h1><p>Your account is not authorized for Portainer.</p>")
+                return
+
+            p_token = get_portainer_jwt()
+            if not p_token:
+                self.send_response(502)
+                self.send_header("Content-Type", "text/plain")
+                self.end_headers()
+                if not is_head:
+                    self.wfile.write(b"Failed to acquire Portainer session token")
+                return
+
+            query_params = urllib.parse.parse_qs(parsed.query)
+            target = query_params.get("rd", ["/"])[0]
+            if not target or target.startswith("/auth/sso-login"):
+                target = "/"
+
+            cookie_portainer = f"portainer_api_key={p_token}; Path=/; SameSite=Lax; HttpOnly; Max-Age=28800"
+            sys.stderr.write(f"[PORTAINER SSO] User {username} autologin -> {target}\n")
+            sys.stderr.flush()
+
+            self.send_response(302)
+            self.send_header("Location", target)
+            self.send_header("Set-Cookie", cookie_portainer)
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+            self.end_headers()
+            return
+
+        if path == "/portainer/logout":
+            self.send_response(302)
+            self.send_header("Location", "https://auth.rohan.run.place/logout")
+            self.send_header("Set-Cookie", "portainer_api_key=; Path=/; SameSite=Lax; HttpOnly; Max-Age=0")
+            self.end_headers()
+            return
+
+        # -------------------------------------------------------------
+        # LLDAP SSO ROUTES
+        # -------------------------------------------------------------
+        if path == "/auth/logout":
+            self.send_response(302)
+            self.send_header("Location", "https://auth.rohan.run.place/logout")
+            self.send_header("Set-Cookie", "token=; Path=/; SameSite=Lax; Max-Age=0")
+            self.send_header("Set-Cookie", "user_id=; Path=/; SameSite=Lax; Max-Age=0")
+            self.send_header("Set-Cookie", "is_admin=; Path=/; SameSite=Lax; Max-Age=0")
+            self.send_header("Set-Cookie", "refresh_token=; Path=/; SameSite=Lax; HttpOnly; Max-Age=0")
+            self.end_headers()
+            return
+
+        # Check LLDAP admin privileges
         is_admin = ("lldap_admin" in all_groups) or ("admins" in all_groups)
         if is_admin and "lldap_admin" not in all_groups:
             all_groups.append("lldap_admin")
@@ -138,7 +217,7 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
         sys.stderr.write(f"[BRIDGE] Path: {path}, User: {username}, Admin: {is_admin_str}, Target: {home_target}\n")
         sys.stderr.flush()
 
-        # 2. Token Refresh Endpoint (/auth/refresh)
+        # Token Refresh Endpoint (/auth/refresh)
         if path == "/auth/refresh":
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -153,7 +232,7 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(resp.encode("utf-8"))
             return
 
-        # 3. Explicit SSO login endpoint (/auth/sso-login)
+        # Explicit SSO login endpoint (/auth/sso-login)
         if path == "/auth/sso-login":
             query_params = urllib.parse.parse_qs(parsed.query)
             target = query_params.get("rd", [home_target])[0]
@@ -170,7 +249,7 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        # 4. Root / and /login paths -> redirect directly to appropriate home view
+        # Root / and /login paths -> redirect directly to appropriate home view
         if path in ["/", "/login"]:
             self.send_response(302)
             self.send_header("Location", home_target)
@@ -182,8 +261,7 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        # 5. All UI HTML Routes (/users, /groups, /user/..., /user-attributes, etc.)
-        # Serve index.html with all 4 authentication cookies attached!
+        # All UI HTML Routes (/users, /groups, /user/..., /user-attributes, etc.)
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(INDEX_HTML)))
@@ -205,5 +283,5 @@ class LLDAPBridgeHandler(http.server.BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     with socketserver.TCPServer(("0.0.0.0", PORT), LLDAPBridgeHandler) as httpd:
-        print(f"LLDAP SSO Bridge listening on port {PORT}", flush=True)
+        print(f"LLDAP & Portainer SSO Bridge listening on port {PORT}", flush=True)
         httpd.serve_forever()
