@@ -680,7 +680,8 @@ main.grow {
 }
 
 main.grow > div {
-  max-width: 920px !important;
+  max-width: 960px !important;
+  width: 100% !important;
   margin: 0 auto !important;
 }
 
@@ -752,14 +753,242 @@ h5.text-xl.font-semibold {
   gap: 12px !important;
 }
 
+
+/* ==========================================================================
+   ACCOUNT SECURITY & PASSWORD SETTINGS (/settings/security) - REFINED
+   ========================================================================== */
+main.grow:has(#change-password-button) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding-top: 60px !important;
+}
+
+div[data-slot="card"]:has(#change-password-button),
+div:has(> div > div > #change-password-button),
+div:has(> div > #change-password-button) {
+  width: 100% !important;
+  max-width: 520px !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04) !important;
+  padding: 0 !important;
+  margin: 20px auto 0 auto !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+div[data-slot="card"]:has(#change-password-button) .p-2.md\:p-6,
+div[data-slot="card"]:has(#change-password-button) .p-2,
+div[data-slot="card"]:has(#change-password-button) .p-6 {
+  padding: 32px 32px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Card Header Badge and Title */
+.sec-card-header {
+  margin-bottom: 8px !important;
+  text-align: left !important;
+}
+
+.sec-card-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background-color: #eff6ff !important;
+  color: #2563eb !important;
+  border: 1px solid #dbeafe !important;
+  border-radius: 9999px !important;
+  padding: 4px 12px 4px 10px !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  margin-bottom: 12px !important;
+}
+
+.sec-card-title {
+  margin: 0 0 6px 0 !important;
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.25 !important;
+}
+
+.sec-card-subtitle {
+  margin: 0 !important;
+  font-size: 0.875rem !important;
+  color: #64748b !important;
+  line-height: 1.45 !important;
+}
+
+/* User Identity Data Rows (Name, Email, Password) */
+div[data-slot="card"]:has(#change-password-button) div.border.rounded {
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 14px 18px !important;
+  margin: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: all 0.2s ease !important;
+}
+
+div[data-slot="card"]:has(#change-password-button) div.border.rounded:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+div[data-slot="card"]:has(#change-password-button) div.border.rounded p {
+  margin: 0 !important;
+  color: #0f172a !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+div[data-slot="card"]:has(#change-password-button) div.border.rounded .flex.items-center {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+/* Enhanced Field Rows */
+.sec-field-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+.sec-field-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  color: #64748b !important;
+  font-size: 0.825rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.sec-field-val {
+  color: #0f172a !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.sec-dots {
+  letter-spacing: 0.25em !important;
+  font-size: 1.15rem !important;
+  color: #334155 !important;
+}
+
+/* The Change Password Button */
+button#change-password-button,
+#change-password-button {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  height: 48px !important;
+  margin-top: 8px !important;
+  padding: 0 24px !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-size: 0.925rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+}
+
+button#change-password-button:hover,
+#change-password-button:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+  background-color: #1d4ed8 !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+button#change-password-button:active,
+#change-password-button:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3) !important;
+}
+
+/* Change Password Modal Enhancements */
+#password-change-dialog-submit {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 8px 22px !important;
+  font-weight: 600 !important;
+  border: 1px solid #2563eb !important;
+}
+
+#password-change-dialog-submit:hover {
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+#password-change-dialog-cancel {
+  border-radius: 8px !important;
+  padding: 8px 18px !important;
+  font-weight: 600 !important;
+}
+
+/* Ensure credential cards span full width in Two-Factor settings */
+#one-time-password-panel .grid.grid-cols-12,
+#webauthn-credentials-panel .grid.grid-cols-12 {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  width: 100% !important;
+}
+
+#one-time-password-panel .grid.grid-cols-12 > div,
+#webauthn-credentials-panel .grid.grid-cols-12 > div,
+div[data-slot="card-content"] > div:has(#one-time-password),
+div[data-slot="card-content"] > div:has(div[id^="webauthn-credential-"]),
+.col-span-12.md\:col-span-6.xl\:col-span-3:has(#one-time-password),
+.col-span-12.md\:col-span-6.xl\:col-span-3:has(div[id^="webauthn-credential-"]),
+.col-span-12.md\:col-span-6.xl\:col-span-3 {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  max-width: 680px !important;
+  min-width: 0 !important;
+}
+
 /* ==========================================================================
    PRIMARY "ADD" BUTTONS (SETTINGS)
    ========================================================================== */
 button[id$="-add"],
 #one-time-password-add,
 #webauthn-credential-add,
-main.grow button.bg-primary,
-button:has(.text-primary-foreground):not(#settings-menu) {
+main.grow button.bg-primary:not(#change-password-button),
+button:has(.text-primary-foreground):not(#settings-menu):not(#change-password-button) {
   background-color: #2563eb !important;
   color: #ffffff !important;
   border: 1px solid #2563eb !important;
@@ -815,10 +1044,11 @@ div:has(> #webauthn-credential-add) {
    ========================================================================== */
 #one-time-password,
 div[data-slot="card"][id^="webauthn-credential-"],
-#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button):not(input):not(span) {
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button):not(input):not(span),
+#one-time-password-panel div[id^="one-time-password"]:not(button):not(input):not(span) {
   width: 100% !important;
-  max-width: 480px !important;
-  min-width: 320px !important;
+  max-width: 680px !important;
+  min-width: 0 !important;
   background-color: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 12px !important;
@@ -832,14 +1062,16 @@ div[data-slot="card"][id^="webauthn-credential-"],
 
 #one-time-password:hover,
 div[data-slot="card"][id^="webauthn-credential-"]:hover,
-#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button):not(input):not(span):hover {
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button):not(input):not(span):hover,
+#one-time-password-panel div[id^="one-time-password"]:not(button):not(input):not(span):hover {
   border-color: #cbd5e1 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
 }
 
 #one-time-password > div.p-6,
 div[data-slot="card"][id^="webauthn-credential-"] > div.p-6,
-#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) > div.p-6 {
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) > div.p-6,
+#one-time-password-panel div[id^="one-time-password"]:not(button) > div.p-6 {
   padding: 16px 20px !important;
   display: block !important;
   width: 100% !important;
@@ -848,7 +1080,8 @@ div[data-slot="card"][id^="webauthn-credential-"] > div.p-6,
 
 #one-time-password .flex.items-center.h-full.w-full,
 div[data-slot="card"][id^="webauthn-credential-"] .flex.items-center.h-full.w-full,
-#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) .flex.items-center.h-full.w-full {
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) .flex.items-center.h-full.w-full,
+#one-time-password-panel div[id^="one-time-password"]:not(button) .flex.items-center.h-full.w-full {
   display: flex !important;
   align-items: center !important;
   width: 100% !important;
@@ -923,7 +1156,7 @@ div[data-slot="card"][id^="webauthn-credential-"] .justify-end,
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
-  gap: 6px !important;
+  gap: 8px !important;
   flex-shrink: 0 !important;
   margin-left: auto !important;
   width: auto !important;
@@ -1594,4 +1827,372 @@ code, pre, .font-mono {
   text-align: center;
   padding: 48px 20px;
   color: #64748b;
+}
+
+
+/* ==========================================================================
+   9. COMPREHENSIVE RESPONSIVE DESIGN (MOBILE, TABLET & DESKTOP)
+   ========================================================================== */
+
+/* Tablet & Mobile Screens (<= 860px) */
+@media (max-width: 860px) {
+  /* ---------------------------------------------------------
+     SPLIT-SCREEN CARDS: STACK VERTICALLY ON MOBILE
+     --------------------------------------------------------- */
+  #first-factor-stage,
+  #reset-password-step1-stage,
+  #reset-password-step2-stage {
+    padding: 24px 16px !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #first-factor-stage > div.mx-auto,
+  #reset-password-step1-stage > div.mx-auto,
+  #reset-password-step2-stage > div.mx-auto {
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 460px !important;
+    min-height: auto !important;
+    border-radius: 18px !important;
+    margin: 0 auto !important;
+    box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* Compact Top Hero Banner */
+  .salesskip-hero-panel {
+    flex: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 140px !important;
+    padding: 26px 24px 22px 24px !important;
+    border-radius: 18px 18px 0 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+
+  .salesskip-star-icon {
+    width: 34px !important;
+    height: 34px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .salesskip-hero-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .salesskip-hero-title {
+    font-size: 1.85rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .salesskip-hero-desc {
+    font-size: 0.85rem !important;
+    margin-top: 6px !important;
+    max-width: 100% !important;
+    display: block !important;
+  }
+
+  .salesskip-hero-footer {
+    display: none !important;
+  }
+
+  /* Right Form Panel */
+  #first-factor-stage .flex-col.items-stretch,
+  #reset-password-step1-stage .flex-col.items-stretch,
+  #reset-password-step2-stage .flex-col.items-stretch {
+    flex: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 32px 24px 28px 24px !important;
+    border-radius: 0 0 18px 18px !important;
+    box-sizing: border-box !important;
+  }
+
+  #salesskip-right-header,
+  #reset-step1-header,
+  #reset-step2-header {
+    margin-bottom: 20px !important;
+  }
+
+  .salesskip-welcome-title {
+    font-size: 1.6rem !important;
+  }
+
+  .salesskip-welcome-sub {
+    font-size: 0.85rem !important;
+  }
+
+  #first-factor-stage input[type="text"],
+  #first-factor-stage input[type="password"],
+  #reset-password-step1-stage input[type="text"],
+  #reset-password-step2-stage input[type="password"] {
+    height: 46px !important;
+    font-size: 16px !important;
+    padding: 10px 14px !important;
+  }
+
+  #first-factor-stage #sign-in-button,
+  #reset-password-step1-stage #reset-button,
+  #reset-password-step2-stage #reset-button,
+  #passkey-sign-in-button {
+    height: 48px !important;
+    font-size: 0.95rem !important;
+  }
+
+  /* ---------------------------------------------------------
+     SECOND FACTOR STAGE (#second-factor-stage)
+     --------------------------------------------------------- */
+  #second-factor-stage {
+    padding: 20px 14px !important;
+  }
+
+  #second-factor-stage > div.mx-auto {
+    width: 100% !important;
+    max-width: 440px !important;
+    padding: 28px 20px !important;
+    border-radius: 16px !important;
+  }
+
+  /* ---------------------------------------------------------
+     MODALS & DIALOGS (2FA METHOD SELECTION, SESSION ELEVATION)
+     --------------------------------------------------------- */
+  [data-slot="dialog-content"] {
+    width: calc(100vw - 32px) !important;
+    max-width: 440px !important;
+    padding: 24px 18px !important;
+    border-radius: 16px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+
+  #methods-dialog button,
+  .method-option button {
+    width: 100% !important;
+    min-height: 68px !important;
+    padding: 14px 16px !important;
+    font-size: 0.85rem !important;
+    border-radius: 12px !important;
+    margin-bottom: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  [data-slot="dialog-footer"],
+  [data-slot="dialog-content"] > div:last-child {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    margin-top: 8px !important;
+  }
+
+  [data-slot="dialog-footer"] button,
+  button#dialog-close {
+    min-height: 42px !important;
+    padding: 8px 22px !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* ---------------------------------------------------------
+     SETTINGS PAGE (/settings)
+     --------------------------------------------------------- */
+  nav.fixed.top-0 {
+    padding: 0 16px !important;
+    height: 60px !important;
+  }
+
+  nav.fixed.top-0 h6 {
+    font-size: 1.05rem !important;
+  }
+
+  .btn-portal-back {
+    padding: 6px 12px !important;
+    font-size: 0.775rem !important;
+  }
+
+  main.grow {
+    padding: 76px 14px 36px 14px !important;
+  }
+
+  [data-slot="card"] {
+    margin-bottom: 18px !important;
+    border-radius: 12px !important;
+  }
+
+  [data-slot="card-header"] {
+    padding: 18px 20px 12px 20px !important;
+  }
+
+  [data-slot="card-content"] {
+    padding: 14px 20px 20px 20px !important;
+  }
+
+  [data-slot="card-title"],
+  h5.text-xl.font-semibold {
+    font-size: 1.15rem !important;
+  }
+
+  /* ---------------------------------------------------------
+     AUTHENTICATED HOMELAB PORTAL LAUNCHER
+     --------------------------------------------------------- */
+  .portal-navbar {
+    padding: 12px 18px !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+
+  .portal-brand-text h1 {
+    font-size: 0.95rem !important;
+  }
+
+  .portal-content {
+    padding: 0 16px !important;
+    margin-top: 22px !important;
+  }
+
+  .portal-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 22px !important;
+  }
+
+  .portal-search-box {
+    max-width: 100% !important;
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .portal-app-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 14px !important;
+  }
+}
+
+/* Compact Smartphones (<= 480px) */
+@media (max-width: 480px) {
+  #first-factor-stage,
+  #reset-password-step1-stage,
+  #reset-password-step2-stage {
+    padding: 12px 8px !important;
+  }
+
+  #first-factor-stage > div.mx-auto,
+  #reset-password-step1-stage > div.mx-auto,
+  #reset-password-step2-stage > div.mx-auto {
+    max-width: 100% !important;
+    border-radius: 14px !important;
+  }
+
+  .salesskip-hero-panel {
+    min-height: 120px !important;
+    padding: 20px 18px 16px 18px !important;
+    border-radius: 14px 14px 0 0 !important;
+  }
+
+  .salesskip-hero-title {
+    font-size: 1.55rem !important;
+  }
+
+  .salesskip-hero-desc {
+    font-size: 0.8rem !important;
+  }
+
+  #first-factor-stage .flex-col.items-stretch,
+  #reset-password-step1-stage .flex-col.items-stretch,
+  #reset-password-step2-stage .flex-col.items-stretch {
+    padding: 24px 16px 20px 16px !important;
+  }
+
+  .salesskip-welcome-title {
+    font-size: 1.4rem !important;
+  }
+
+  /* Compact Credential Card Rows in Settings */
+  #one-time-password > div.p-6,
+  div[data-slot="card"][id^="webauthn-credential-"] > div.p-6,
+  #webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) > div.p-6,
+  #one-time-password-panel div[id^="one-time-password"]:not(button) > div.p-6 {
+    padding: 12px 14px !important;
+  }
+
+  #one-time-password .flex.items-center.h-full.w-full,
+  div[data-slot="card"][id^="webauthn-credential-"] .flex.items-center.h-full.w-full,
+  #webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) .flex.items-center.h-full.w-full,
+  #one-time-password-panel div[id^="one-time-password"]:not(button) .flex.items-center.h-full.w-full {
+    gap: 10px !important;
+  }
+
+  #one-time-password .shrink-0,
+  div[data-slot="card"][id^="webauthn-credential-"] .shrink-0,
+  #webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) .shrink-0,
+  #one-time-password-panel div[id^="one-time-password"]:not(button) .shrink-0 {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    border-radius: 8px !important;
+  }
+
+  #one-time-password [id$="-description"],
+  div[data-slot="card"][id^="webauthn-credential-"] [id$="-description"],
+  span[id^="webauthn-credential-"][id$="-description"] {
+    font-size: 0.925rem !important;
+  }
+
+  #one-time-password span.text-muted-foreground,
+  div[data-slot="card"][id^="webauthn-credential-"] span.text-muted-foreground,
+  #webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) span.text-muted-foreground {
+    font-size: 0.725rem !important;
+  }
+
+  #one-time-password button,
+  button[id^="webauthn-credential-"][id$="-information"],
+  button[id^="webauthn-credential-"][id$="-edit"],
+  button[id^="webauthn-credential-"][id$="-delete"],
+  div[data-slot="card"][id^="webauthn-credential-"] button:not(#webauthn-credential-add),
+  #webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) button,
+  #one-time-password-panel div[id^="one-time-password"]:not(button) button {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+  }
+
+  .portal-app-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-card {
+    padding: 14px 16px !important;
+    gap: 14px !important;
+  }
+
+  .app-icon-wrapper {
+    width: 52px !important;
+    height: 52px !important;
+    padding: 6px !important;
+  }
+
+  .app-real-logo {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .app-name {
+    font-size: 1.15rem !important;
+  }
+
+  .user-role-label {
+    display: none !important;
+  }
 }

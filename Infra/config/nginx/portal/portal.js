@@ -465,8 +465,8 @@
   // 4. ENHANCE SETTINGS PAGE (/settings)
   // -------------------------------------------------------------------------
   function enhanceSettingsPage() {
-    const observer = new MutationObserver(() => {
-      // Find top nav on settings page
+    function runSettingsEnhancements() {
+      // 1. Top nav Back button
       const nav = document.querySelector('nav.fixed.top-0');
       if (nav && !document.getElementById('btn-settings-portal-back')) {
         const wrap = nav.querySelector('.flex.items-center') || nav;
@@ -482,6 +482,84 @@
         `;
         wrap.appendChild(backBtn);
       }
+
+      // 2. Account Security & Password (/settings/security)
+      const changeBtn = document.getElementById('change-password-button');
+      if (changeBtn) {
+        const cardContent = changeBtn.closest('.p-2.md\\:p-6') || changeBtn.closest('.p-2') || changeBtn.parentElement;
+        if (cardContent) {
+          if (!document.getElementById('sec-card-header')) {
+            const header = document.createElement('div');
+            header.id = 'sec-card-header';
+            header.className = 'sec-card-header';
+            header.innerHTML = `
+              <div class="sec-card-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  <polyline points="9 12 11 14 15 10"></polyline>
+                </svg>
+                <span>Account Security</span>
+              </div>
+              <h3 class="sec-card-title">Identity & Password</h3>
+              <p class="sec-card-subtitle">Manage your verified profile identity and central authentication password.</p>
+            `;
+            cardContent.insertBefore(header, cardContent.firstChild);
+          }
+
+          const rows = cardContent.querySelectorAll('div.border.rounded');
+          rows.forEach((row) => {
+            if (row.dataset.enhanced === 'true') return;
+            const text = row.innerText || '';
+            if (text.includes('Name:')) {
+              const val = text.replace(/Name:\s*/i, '').trim();
+              row.dataset.enhanced = 'true';
+              row.className += ' sec-field-row';
+              row.innerHTML = `
+                <div class="sec-field-label">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  <span>Full Name</span>
+                </div>
+                <div class="sec-field-val">${val || '—'}</div>
+              `;
+            } else if (text.includes('Email:')) {
+              const val = text.replace(/Email:\s*/i, '').trim();
+              row.dataset.enhanced = 'true';
+              row.className += ' sec-field-row';
+              row.innerHTML = `
+                <div class="sec-field-label">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                  </svg>
+                  <span>Email Address</span>
+                </div>
+                <div class="sec-field-val">${val || '—'}</div>
+              `;
+            } else if (text.includes('Password:')) {
+              row.dataset.enhanced = 'true';
+              row.className += ' sec-field-row';
+              row.innerHTML = `
+                <div class="sec-field-label">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <span>Password</span>
+                </div>
+                <div class="sec-field-val sec-dots">••••••••</div>
+              `;
+            }
+          });
+        }
+      }
+    }
+
+    runSettingsEnhancements();
+    const observer = new MutationObserver(() => {
+      runSettingsEnhancements();
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
