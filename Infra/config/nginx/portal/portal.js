@@ -462,6 +462,69 @@
   }
 
   // -------------------------------------------------------------------------
+  // -------------------------------------------------------------------------
+  // DOM TEXT REWRITER: "2FA Authenticator App" & "Passkeys"
+  // -------------------------------------------------------------------------
+  const UI_REPLACEMENTS = [
+    [/\\bTime-based One-Time Password\\b/gi, '2FA Authenticator App'],
+    [/\\bOne-Time Passwords\\b/g, '2FA Authenticator Apps'],
+    [/\\bone-time passwords\\b/g, '2FA authenticator apps'],
+    [/\\bOne-Time Password\\b/g, '2FA Authenticator App'],
+    [/\\bone-time password\\b/g, '2FA authenticator app'],
+    [/\\bWebAuthn Credentials\\b/g, 'Passkeys'],
+    [/\\bwebauthn credentials\\b/g, 'passkeys'],
+    [/\\bWebAuthn Credential\\b/g, 'Passkey'],
+    [/\\bwebauthn credential\\b/g, 'passkey'],
+    [/\\bSecurity Key - WebAuthn\\b/gi, 'Passkeys'],
+    [/\\bSecurity Key\\b/g, 'Passkey'],
+    [/\\bsecurity key\\b/g, 'passkey'],
+    [/\\bWebAuthn\\b/g, 'Passkeys'],
+    [/\\bwebauthn\\b/g, 'passkeys'],
+  ];
+
+  function rewriteUIStrings(root = document.body) {
+    if (!root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while ((node = walker.nextNode())) {
+      const parent = node.parentElement;
+      if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE' || parent.tagName === 'NOSCRIPT')) {
+        continue;
+      }
+      let text = node.nodeValue;
+      if (!text || !text.trim()) continue;
+
+      let changed = false;
+      for (const [pattern, replacement] of UI_REPLACEMENTS) {
+        if (pattern.test(text)) {
+          text = text.replace(pattern, replacement);
+          changed = true;
+        }
+      }
+      if (changed) {
+        node.nodeValue = text;
+      }
+    }
+
+    const elements = root.querySelectorAll ? root.querySelectorAll('[aria-label], [title], [placeholder]') : [];
+    elements.forEach((el) => {
+      for (const attr of ['aria-label', 'title', 'placeholder']) {
+        const val = el.getAttribute(attr);
+        if (val) {
+          let newVal = val;
+          for (const [pattern, replacement] of UI_REPLACEMENTS) {
+            if (pattern.test(newVal)) {
+              newVal = newVal.replace(pattern, replacement);
+            }
+          }
+          if (newVal !== val) {
+            el.setAttribute(attr, newVal);
+          }
+        }
+      }
+    });
+  }
+
   // 4. ENHANCE SETTINGS PAGE (/settings)
   // -------------------------------------------------------------------------
   function enhanceSettingsPage() {
@@ -558,8 +621,10 @@
     }
 
     runSettingsEnhancements();
+    rewriteUIStrings(document.body);
     const observer = new MutationObserver(() => {
       runSettingsEnhancements();
+      rewriteUIStrings(document.body);
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
@@ -761,6 +826,7 @@
   // 6. LIFECYCLE & MUTATION OBSERVER
   // -------------------------------------------------------------------------
   function dispatchEnhancement() {
+    rewriteUIStrings(document.body);
     if (document.getElementById('first-factor-stage')) {
       enhanceLoginPage();
     } else if (document.getElementById('reset-password-step1-stage')) {
@@ -781,6 +847,7 @@
       await renderPortal(user);
     } else {
       dispatchEnhancement();
+      rewriteUIStrings(document.body);
 
       let isCheckingSession = false;
       const observer = new MutationObserver(async () => {
