@@ -273,33 +273,10 @@ header {
   background: transparent !important;
 }
 
-/* Geometric wireframe lines strictly transparent with NO white background */
+/* Hide any legacy geo lines if present */
 svg.salesskip-geo-lines,
 .salesskip-geo-lines {
-  position: absolute !important;
-  right: -80px !important;
-  bottom: -60px !important;
-  width: 440px !important;
-  height: 440px !important;
-  z-index: 1 !important;
-  pointer-events: none !important;
-  opacity: 0.8 !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  fill: none !important;
-}
-
-svg.salesskip-geo-lines rect,
-.salesskip-geo-lines rect {
-  fill: none !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
+  display: none !important;
 }
 
 /* ==========================================================================
@@ -707,21 +684,45 @@ main.grow > div {
   margin: 0 auto !important;
 }
 
-/* Cards */
+/* Cards - Strictly ONE clean subtle border with zero inner divider lines */
 [data-slot="card"],
 main.grow .bg-card,
 .bg-card {
   background-color: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 12px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
   color: #0f172a !important;
   margin-bottom: 24px !important;
+  overflow: hidden !important;
+}
+
+/* Eliminate all internal dividing lines, nested borders, and background tints */
+[data-slot="card"] > div,
+[data-slot="card"] [data-slot="card-content"],
+[data-slot="card"] [data-slot="card-header"],
+[data-slot="card"] [data-slot="card-footer"],
+[data-slot="card"] .grid.grid-cols-12,
+#one-time-password-panel > div,
+#webauthn-credentials-panel > div,
+#one-time-password-panel [data-slot="card-content"],
+#webauthn-credentials-panel [data-slot="card-content"],
+#one-time-password-panel .grid.grid-cols-12,
+#webauthn-credentials-panel .grid.grid-cols-12 {
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 [data-slot="card-header"] {
-  padding: 22px 26px 16px 26px !important;
-  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 22px 26px 14px 26px !important;
+  border: none !important;
 }
 
 [data-slot="card-title"],
@@ -738,13 +739,14 @@ h5.text-xl.font-semibold {
 }
 
 [data-slot="card-content"] {
-  padding: 22px 26px !important;
+  padding: 18px 26px !important;
   color: #0f172a !important;
+  border: none !important;
 }
 
 [data-slot="card-footer"] {
   padding: 16px 26px !important;
-  border-top: 1px solid #f1f5f9 !important;
+  border: none !important;
   display: flex !important;
   justify-content: flex-end !important;
   gap: 12px !important;
@@ -945,20 +947,20 @@ input[type="radio"] {
   cursor: pointer !important;
 }
 
-/* Data grid in extended info modal */
-.grid.grid-cols-12 {
+/* Data grid strictly inside extended info modal */
+[data-slot="dialog-content"] .grid.grid-cols-12 {
   background: #f8fafc !important;
   border-radius: 8px !important;
   padding: 16px !important;
   border: 1px solid #e2e8f0 !important;
 }
 
-.grid.grid-cols-12 > div {
+[data-slot="dialog-content"] .grid.grid-cols-12 > div {
   color: #0f172a !important;
 }
 
-.grid.grid-cols-12 span.font-medium,
-.grid.grid-cols-12 span.text-muted-foreground {
+[data-slot="dialog-content"] .grid.grid-cols-12 span.font-medium,
+[data-slot="dialog-content"] .grid.grid-cols-12 span.text-muted-foreground {
   color: #64748b !important;
 }
 
@@ -990,7 +992,7 @@ input:focus {
   outline: none !important;
 }
 
-/* Modals & Dialogs (Session elevation, passkey confirmation) */
+/* Modals & Dialogs (Session elevation, passkey confirmation, method selection) */
 [data-slot="dialog-content"] {
   background-color: #ffffff !important;
   color: #0f172a !important;
@@ -1002,7 +1004,7 @@ input:focus {
 
 [data-slot="dialog-title"] {
   color: #0f172a !important;
-  font-size: 1.2rem !important;
+  font-size: 1.25rem !important;
   font-weight: 700 !important;
 }
 
@@ -1012,8 +1014,153 @@ input:focus {
 }
 
 [data-slot="dialog-overlay"] {
-  background-color: rgba(15, 23, 42, 0.4) !important;
+  background-color: rgba(15, 23, 42, 0.45) !important;
   backdrop-filter: blur(2px) !important;
+}
+
+/* -------------------------------------------------------------------------
+   MODAL 2FA METHOD BUTTONS & FONT COLOR FIX (IMAGE 0)
+   ------------------------------------------------------------------------- */
+#methods-dialog,
+.method-option {
+  width: 100% !important;
+}
+
+#methods-dialog .method-option button,
+.method-option button,
+#methods-dialog button,
+div:has(> #methods-dialog) button {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: 1px solid #2563eb !important;
+  border-radius: 10px !important;
+  padding: 18px 24px !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+  cursor: pointer !important;
+}
+
+#methods-dialog .method-option button:hover,
+.method-option button:hover,
+#methods-dialog button:hover,
+div:has(> #methods-dialog) button:hover {
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* Force Crisp Pure White Typography on Modal Buttons */
+#methods-dialog button *,
+#methods-dialog button p,
+#methods-dialog button span,
+.method-option button *,
+.method-option button p,
+.method-option button span,
+[data-slot="dialog-content"] .method-option button p,
+[data-slot="dialog-content"] .method-option button span {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  text-shadow: none !important;
+}
+
+/* Force Pure White Icons on Modal Buttons */
+#methods-dialog button svg,
+.method-option button svg,
+[data-slot="dialog-content"] .method-option svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: none !important;
+}
+
+#methods-dialog button svg path,
+#methods-dialog button svg circle,
+#methods-dialog button svg polyline,
+#methods-dialog button svg line,
+.method-option button svg path,
+.method-option button svg circle,
+.method-option button svg polyline,
+.method-option button svg line {
+  stroke: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Clock / OTP dial icon fill inside modal */
+#methods-dialog svg circle,
+.method-option svg circle {
+  stroke: #ffffff !important;
+}
+
+/* Close & Modal Action Buttons */
+[data-slot="dialog-content"] button:has-text("Close"),
+[data-slot="dialog-content"] button#dialog-close,
+[data-slot="dialog-content"] [data-slot="dialog-footer"] button,
+[data-slot="dialog-content"] > div:last-child > button,
+[data-slot="dialog-content"] div:has(> button#dialog-close) button {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border: 1px solid #2563eb !important;
+  border-radius: 8px !important;
+  padding: 8px 22px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+[data-slot="dialog-content"] button:has-text("Close"):hover,
+[data-slot="dialog-content"] button#dialog-close:hover,
+[data-slot="dialog-content"] [data-slot="dialog-footer"] button:hover,
+[data-slot="dialog-content"] > div:last-child > button:hover {
+  background-color: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+}
+
+/* Wizard Cancel / Previous Buttons */
+button#dialog-cancel {
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 8px 18px !important;
+}
+
+button#dialog-cancel:hover {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+button#dialog-previous {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 8px 18px !important;
+}
+
+button#dialog-previous:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+button#dialog-next {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+  border: 1px solid #2563eb !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 8px 18px !important;
+}
+
+button#dialog-next:hover {
+  background-color: #1d4ed8 !important;
+}
+
+/* General Text in Dialogs */
+[data-slot="dialog-content"] p:not(.method-option p) {
+  color: #334155 !important;
 }
 
 /* QR Code Display for TOTP (Strictly scoped - Never matches hero SVG) */
