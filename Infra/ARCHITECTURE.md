@@ -168,3 +168,12 @@ To offload agent execution, model tool invocation, testing suites, and sandbox r
 - Session limits are **2.5 GiB RAM / 1.5 CPU** (`mem_limit`, `nano_cpus`). At 1.5 GiB the kernel OOM-killed `antigravity-ide`.
 - Host tuning: 4 GiB additional swap (`/swapfile2`) and `vm.swappiness=10` to absorb spikes without thrashing.
 - Permanent capacity fix: resize the instance to **4 OCPU / 24 GB** (Always Free A1 allowance) and raise per-session limits to ~4 GiB / 2 CPU.
+
+#### Mail inside a session (Thunderbird / IMAP / SMTP)
+- `mail.rohan.run.place` is a **protocol** name, not a web name. The gateway's in-house DNS and each session's `/etc/hosts` previously mapped every `*.rohan.run.place` host to nginx (`172.30.0.2`), which only listens on 80/443, so Thunderbird could not reach IMAP 993 or SMTP 465/587.
+- `MAIL_IP` (default `172.30.0.1`, the docker bridge gateway) now overrides `mail`, `webmail`, `mail.rohan.run.place`, and `webmail.rohan.run.place`. Published ports 993/465/587 on the host forward to `mailserver`, and the Let's Encrypt cert SAN already includes `mail.rohan.run.place`, so TLS validates without an exception.
+- Webmail over HTTPS still works because `172.30.0.1:443` reaches nginx.
+- Sessions reach the mail server only through the host's published ports; they are not attached to `authelia_default` (`172.18.0.0/16`) and cannot route there directly.
+- Thunderbird autoconfig is served at `https://autoconfig.rohan.run.place/mail/config-v1.1.xml` and advertises IMAP 993 SSL + SMTP 465 SSL / 587 STARTTLS, username `%EMAILADDRESS%`.
+- Authentication is LDAP-backed: the username is the LLDAP email (`user@rohan.run.place`) and the password is the **LLDAP password**. LLDAP exposes its `email` column as the LDAP `mail` attribute; there is no separate `mail` attribute.
+- Outbound mail to external domains is still blocked by Oracle's tenancy-wide TCP 25 egress block; internal delivery works.

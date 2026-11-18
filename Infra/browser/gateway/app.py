@@ -50,6 +50,10 @@ DOCKER_HOST = os.getenv("DOCKER_HOST", "tcp://docker-socket-proxy:2375")
 MAX_SESSIONS = int(os.getenv("MAX_SESSIONS", "3"))
 FF_IMAGE = os.getenv("FF_IMAGE", "lscr.io/linuxserver/firefox:latest")
 NGINX_IP = os.getenv("NGINX_IP", "172.30.0.2")
+# Mail protocols (IMAP/SMTP) are published on the docker bridge gateway,
+# not proxied by nginx. Point mail hostnames at the host so 993/465/587
+# reach docker-mailserver and the TLS cert (SAN includes mail.*) matches.
+MAIL_IP = os.getenv("MAIL_IP", "172.30.0.1")
 GATEWAY_IP = os.getenv("GATEWAY_IP", "172.30.0.4")
 PROFILES_DIR = os.getenv("PROFILES_DIR", "/home/ubuntu/Workspace/browser/profiles")
 SQUID_USERS_DIR = os.getenv("SQUID_USERS_DIR", "/home/ubuntu/Workspace/browser/squid/users")
@@ -122,6 +126,8 @@ DEFAULT_SHORT_NAMES = [
 
 EXTRA_HOSTS = {h: NGINX_IP for h in PUBLIC_HOSTS + DEFAULT_SHORT_NAMES}
 EXTRA_HOSTS["browser-gateway"] = GATEWAY_IP
+for _mail_host in ("mail", "webmail", "mail.rohan.run.place", "webmail.rohan.run.place"):
+    EXTRA_HOSTS[_mail_host] = MAIL_IP
 
 DEFAULT_GOTOS = [
     ("koel", "https://koel.rohan.run.place/", "Koel Music", "Stream company audio & music library", "Entertainment", "music", 1),
