@@ -1,0 +1,227 @@
+theme: light
+
+session:
+  secret: __REDACTED__
+  cookies:
+    - name: authelia_session
+      domain: rohan.run.place
+      authelia_url: https://auth.rohan.run.place
+      inactivity: 30d
+      expiration: 90d
+      remember_me: 365d
+  redis:
+    host: redis
+    port: 6379
+
+storage:
+  local:
+    path: /config/authelia.db
+  encryption_key: change-this-to-a-very-long-random-encryption-key-min-64-characters-long-please
+
+authentication_backend:
+  ldap:
+    implementation: "custom"
+    address: "ldap://lldap:3890"
+    base_dn: "dc=rohan,dc=run,dc=place"
+    user: "uid=admin,ou=people,dc=rohan,dc=run,dc=place"
+    password: "__REDACTED__"
+    additional_users_dn: "ou=people"
+    users_filter: "(&({username_attribute}={input})(|(objectClass=person)(objectClass=inetOrgPerson)))"
+    additional_groups_dn: "ou=groups"
+    groups_filter: "(|(member={dn})(uniqueMember={dn}))"
+    attributes:
+      username: "uid"
+      display_name: "displayName"
+      mail: "mail"
+      group_name: "cn"
+
+totp:
+  disable: false
+  issuer: "rohan.run.place"
+  algorithm: "sha1"
+  digits: 6
+  period: 30
+  skew: 1
+  secret_size: 32
+
+webauthn:
+  disable: false
+  display_name: "Rohan Run Place"
+  timeout: 60s
+  enable_passkey_login: true
+  experimental_enable_passkey_uv_two_factors: true
+  experimental_enable_passkey_upgrade: true
+  selection_criteria:
+    user_verification: "preferred"
+    discoverability: "preferred"
+
+
+identity_validation:
+  reset_password:
+    jwt_secret: change-this-to-a-very-long-random-secret-for-jwt-reset
+  elevated_session:
+    skip_second_factor: true
+    code_lifespan: 15m
+    elevation_lifespan: 30m
+    characters: 6
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: auth.rohan.run.place
+      policy: bypass
+
+    - domain: status.rohan.run.place
+      policy: bypass
+
+    - domain: firewall.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:firewall"
+
+    - domain: internal.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:internal"
+        - "group:apps-all"
+        - "group:service-accounts"
+        - "group:agents"
+
+    - domain: portainer.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:portainer"
+
+    - domain: paperclip.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:paperclip"
+        - "group:service-accounts"
+        - "group:agents"
+        - "group:apps-all"
+
+    - domain: myapps.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:apps-all"
+        - "group:ai-dev-core"
+        - "group:myapps"
+        - "group:browser"
+
+    - domain: browser.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:apps-all"
+        - "group:ai-dev-core"
+        - "group:browser"
+
+    - domain: mailpit.rohan.run.place
+      policy: one_factor
+      subject:
+        - "group:admins"
+        - "group:mailpit"
+        - "group:users"
+        - "group:apps-all"
+
+    - domain: cockpit.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:cockpit"
+
+    - domain: openhands.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:openhands"
+        - "group:ai-dev-core"
+        - "group:service-accounts"
+        - "group:agents"
+
+    - domain: opencode.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:opencode"
+        - "group:ai-dev-core"
+        - "group:service-accounts"
+        - "group:agents"
+
+    - domain:
+        - mail.rohan.run.place
+        - webmail.rohan.run.place
+      policy: one_factor
+      subject:
+        - "group:admins"
+        - "group:mail"
+        - "group:mail-all"
+        - "group:ai-dev-core"
+        - "group:users"
+
+    - domain: koel.rohan.run.place
+      policy: two_factor
+      subject:
+        - "group:admins"
+        - "group:apps-all"
+        - "group:mail"
+        - "group:mail-all"
+        - "group:ai-dev-core"
+        - "group:users"
+        - "group:koel"
+
+    - domain:
+        - user.rohan.run.place
+        - users.rohan.run.place
+      policy: two_factor
+
+    - domain:
+        - "rohan.run.place"
+        - "*.rohan.run.place"
+      policy: two_factor
+      subject:
+        - "group:apps-all"
+
+identity_providers:
+  oidc:
+    hmac_secret: "__REDACTED__"
+    jwks:
+      - key_id: "default"
+        key: |
+          __REDACTED__
+    clients:
+      - client_id: "default-client"
+        client_name: "Default Client"
+        client_secret: "__REDACTED__"
+        public: false
+        authorization_policy: "two_factor"
+        redirect_uris:
+          - "https://oauth.pstmn.io/v1/callback"
+          - "http://localhost:8080/callback"
+        scopes:
+          - "openid"
+          - "profile"
+          - "email"
+          - "groups"
+          - "offline_access"
+        response_types:
+          - "code"
+        grant_types:
+          - "authorization_code"
+          - "refresh_token"
+
+notifier:
+  disable_startup_check: true
+  smtp:
+    address: "smtp://mailserver:587"
+    username: "admin@rohan.run.place"
+    password: "__REDACTED__"
+    sender: "Authelia <admin@rohan.run.place>"
+    subject: "[Authelia] {title}"
+    tls:
+      skip_verify: true
