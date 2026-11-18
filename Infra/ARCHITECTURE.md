@@ -161,3 +161,10 @@ To offload agent execution, model tool invocation, testing suites, and sandbox r
 - **App catalog path**: the apps panel fetches `api/apps/metadata.yml` from the MyApps origin. `authelia-nginx` serves it from the read-only mount `browser/proot-repo/metadata -> /usr/share/nginx/html/myapps-apps`, so every user sees the same catalog and no per-session state is involved.
 - **Installs**: `selkies-proot` runs `proot-apps` against the upstream registry (`ghcr.io/linuxserver/proot-apps`). Do **not** set `apps_repo_folder` / `PA_REPO_FOLDER` unless that folder also holds the application images; a metadata-only local repo makes every install fail with "No manifest available".
 - **Pitfall**: patching `settings.py`, nginx, or creating symlinks inside a running `ff-*` container only changes that container's writable layer. It is lost on the next recreate and never applies to other users. Put changes in the image, the host nginx, or the gateway instead.
+
+#### Streaming performance (no GPU)
+- The A1 host has no GPU, so Selkies encodes in **software (x264)**. Full-resolution 60 fps streams overwhelm a 1-thread encoder and cause frame loss, backpressure, and apparent freezes.
+- Sessions are therefore locked to **1280x720 @ 30 fps, CRF 30, h264**, with CPU encode threading on (`SELKIES_MANUAL_RESOLUTION`, `SELKIES_FRAMERATE=30-30`, `SELKIES_VIDEO_CRF=30-30`, `SELKIES_ENCODER=h264enc`). This is roughly 6x less encode work than ~1868x990 @ 60 fps.
+- Session limits are **2.5 GiB RAM / 1.5 CPU** (`mem_limit`, `nano_cpus`). At 1.5 GiB the kernel OOM-killed `antigravity-ide`.
+- Host tuning: 4 GiB additional swap (`/swapfile2`) and `vm.swappiness=10` to absorb spikes without thrashing.
+- Permanent capacity fix: resize the instance to **4 OCPU / 24 GB** (Always Free A1 allowance) and raise per-session limits to ~4 GiB / 2 CPU.
