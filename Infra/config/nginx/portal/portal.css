@@ -1092,7 +1092,6 @@ div:has(> #methods-dialog) button:hover {
 }
 
 /* Close & Modal Action Buttons */
-[data-slot="dialog-content"] button:has-text("Close"),
 [data-slot="dialog-content"] button#dialog-close,
 [data-slot="dialog-content"] [data-slot="dialog-footer"] button,
 [data-slot="dialog-content"] > div:last-child > button,
@@ -1107,7 +1106,6 @@ div:has(> #methods-dialog) button:hover {
   transition: all 0.15s ease !important;
 }
 
-[data-slot="dialog-content"] button:has-text("Close"):hover,
 [data-slot="dialog-content"] button#dialog-close:hover,
 [data-slot="dialog-content"] [data-slot="dialog-footer"] button:hover,
 [data-slot="dialog-content"] > div:last-child > button:hover {

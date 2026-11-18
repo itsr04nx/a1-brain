@@ -1,13 +1,5 @@
 #!/usr/bin/with-contenv bash
 
-# Configure firm proxy for internal network egress (Squid proxy)
-export http_proxy="${http_proxy:-http://172.30.0.3:3128}"
-export https_proxy="${https_proxy:-http://172.30.0.3:3128}"
-export HTTP_PROXY="${HTTP_PROXY:-http://172.30.0.3:3128}"
-export HTTPS_PROXY="${HTTPS_PROXY:-http://172.30.0.3:3128}"
-export no_proxy="${no_proxy:-localhost,127.0.0.1,172.30.0.0/24,172.31.0.0/24,172.18.0.0/16,rohan.run.place,*.rohan.run.place}"
-export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,172.30.0.0/24,172.31.0.0/24,172.18.0.0/16,rohan.run.place,*.rohan.run.place}"
-
 PROOT_APPS_BIN="${HOME}/.local/bin/proot-apps"
 PROOT_BIN="${HOME}/.local/bin/proot"
 STEAM_LOCKFILE="/var/lib/selkies/steam-installed"
@@ -22,7 +14,6 @@ if [ -z "${DISPLAY}" ]; then
   export DISPLAY=":0"
 fi
 
-# proot traces every process it starts, so a host that denies ptrace leaves
 proot_runs() {
   [ -x "${PROOT_BIN}" ] && "${PROOT_BIN}" -0 /bin/true >/dev/null 2>&1
 }
@@ -35,7 +26,6 @@ explain_denial() {
   echo "  Grant the container CAP_SYS_PTRACE, or lower the sysctl on the host." >&2
 }
 
-# what is installed
 list_installed() {
   root="${HOME}/proot-apps"
   if [ -d "${root}" ]; then
@@ -50,7 +40,6 @@ list_installed() {
   fi
 }
 
-# open a terminal on the app compositor for user facing actions
 run_in_terminal() {
   if [ -z "${WAYLAND_DISPLAY}" ] && [ -n "${XDG_RUNTIME_DIR}" ]; then
     for sock in "${XDG_RUNTIME_DIR}"/wayland-*; do
@@ -61,12 +50,12 @@ run_in_terminal() {
     done
   fi
   if [ -n "${WAYLAND_DISPLAY}" ] && command -v foot >/dev/null 2>&1; then
-    exec foot "$@"
-  elif [ -n "${DISPLAY}" ] && command -v st >/dev/null 2>&1; then
-    exec st -e "$@"
-  else
-    exec "$@"
+    foot "$@" && exit 0
   fi
+  if [ -n "${DISPLAY}" ] && command -v st >/dev/null 2>&1 && xset q >/dev/null 2>&1; then
+    st -e "$@" && exit 0
+  fi
+  exec "$@"
 }
 
 case "${ACTION}" in

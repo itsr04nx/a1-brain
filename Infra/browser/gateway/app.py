@@ -563,10 +563,6 @@ def create_container(user: str, ip: str) -> None:
             "TZ": TZ,
             "SELKIES_DESKTOP": "true",
             "PIXELFLUX_WAYLAND": "true",
-            "http_proxy": "http://172.30.0.3:3128",
-            "https_proxy": "http://172.30.0.3:3128",
-            "HTTP_PROXY": "http://172.30.0.3:3128",
-            "HTTPS_PROXY": "http://172.30.0.3:3128",
             "no_proxy": "localhost,127.0.0.1,172.30.0.0/24,172.31.0.0/24,172.18.0.0/16,rohan.run.place,*.rohan.run.place",
             "NO_PROXY": "localhost,127.0.0.1,172.30.0.0/24,172.31.0.0/24,172.18.0.0/16,rohan.run.place,*.rohan.run.place",
         },
@@ -576,6 +572,7 @@ def create_container(user: str, ip: str) -> None:
             "/home/ubuntu/Workspace/browser/internal-ca.crt": {"bind": "/usr/lib/firefox/distribution/internal-ca.crt", "mode": "ro"},
             "/home/ubuntu/Workspace/browser/selkies-proot": {"bind": "/usr/local/bin/selkies-proot", "mode": "ro"},
             "/home/ubuntu/Workspace/browser/00-proxy.sh": {"bind": "/etc/profile.d/00-proxy.sh", "mode": "ro"},
+            "/home/ubuntu/Workspace/browser/proot-repo/metadata": {"bind": "/usr/share/selkies/web/api/apps", "mode": "ro"},
         },
         extra_hosts=all_hosts,
         dns=[GATEWAY_IP, "172.30.0.5"],
@@ -586,7 +583,8 @@ def create_container(user: str, ip: str) -> None:
                 restart_policy={"Name": "no"},
         labels={"browser.managed": "true", "browser.user": user},
         cap_drop=["ALL"],
-        cap_add=["CHOWN", "SETUID", "SETGID", "DAC_OVERRIDE", "FOWNER", "KILL", "SYS_PTRACE"],
+        devices=["/dev/net/tun:/dev/net/tun:rwm"],
+        cap_add=["CHOWN", "SETUID", "SETGID", "DAC_OVERRIDE", "FOWNER", "KILL", "SYS_PTRACE", "NET_ADMIN"],
     )
     browser_net = dc().networks.get(BROWSER_NET)
     try:
