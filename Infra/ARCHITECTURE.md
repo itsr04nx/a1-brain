@@ -171,7 +171,10 @@ To offload agent execution, model tool invocation, testing suites, and sandbox r
 
 #### Streaming performance (no GPU)
 - The A1 host has no GPU, so Selkies encodes in **software (x264)**. Full-resolution 60 fps streams overwhelm a 1-thread encoder and cause frame loss, backpressure, and apparent freezes.
-- Sessions are therefore locked to **1280x720 @ 30 fps, CRF 30, h264**, with CPU encode threading on (`SELKIES_MANUAL_RESOLUTION`, `SELKIES_FRAMERATE=30-30`, `SELKIES_VIDEO_CRF=30-30`, `SELKIES_ENCODER=h264enc`). This is roughly 6x less encode work than ~1868x990 @ 60 fps.
+- Resolution is **client-driven**: `SELKIES_MANUAL_RESOLUTION` is deliberately **not** set. Selkies sizes the desktop to the browser window, so text is rendered at real pixel size instead of being upscaled from 720p. Users can pick a preset, a custom width/height, or "Reset to Window Size" live in the sidebar's **Resolution** tab (`SELKIES_UI_SIDEBAR_SHOW_SCREEN_SETTINGS=true`, `SELKIES_ENABLE_RESIZE=true`).
+- Do **not** set `SELKIES_MANUAL_RESOLUTION=true` (or `SELKIES_MANUAL_WIDTH/HEIGHT`): the server then forces manual mode and ignores every client resize request, which is exactly what produced the old blurry 720p picture. The logs showed `Client tried to change locked setting 'manual_resolution' ... Request ignored` and `Server override: Applying manual resolution 1280x720`.
+- Stream defaults: **30 fps**, CRF **30** with an adjustable 22-34 range (`SELKIES_VIDEO_CRF=30,22-34`), h264, CPU encode threading on. Higher resolutions cost more software-encode CPU; users can lower the resolution or raise CRF if a session stutters.
+- Container env and limits are immutable. `container_is_stale()` detects sessions created with older settings and `recreate_container()` rebuilds them while keeping the `ff-<user>-config` volume and IP. A stopped stale session is recreated on start/connect, and **Restart** always recreates (about 9 s, Firefox profile and tabs survive in the volume).
 - Session limits are **2.5 GiB RAM / 1.5 CPU** (`mem_limit`, `nano_cpus`). At 1.5 GiB the kernel OOM-killed `antigravity-ide`.
 - Host tuning: 4 GiB additional swap (`/swapfile2`) and `vm.swappiness=10` to absorb spikes without thrashing.
 - Permanent capacity fix: resize the instance to **4 OCPU / 24 GB** (Always Free A1 allowance) and raise per-session limits to ~4 GiB / 2 CPU.

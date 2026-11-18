@@ -620,11 +620,16 @@ def create_container(user: str, ip: str) -> None:
             "PGID": "1000",
             "TZ": TZ,
             "SELKIES_DESKTOP": "true",
-            "SELKIES_MANUAL_RESOLUTION": "true|locked",
-            "SELKIES_MANUAL_WIDTH": "1280",
-            "SELKIES_MANUAL_HEIGHT": "720",
+            # Resolution follows the client window, so text is rendered at the
+            # real pixel size instead of being upscaled from 720p.  Users can
+            # pick a preset or a custom size live in the sidebar's Resolution
+            # tab; the server must not force manual mode or it ignores them.
+            "SELKIES_UI_SIDEBAR_SHOW_SCREEN_SETTINGS": "true",
+            "SELKIES_ENABLE_RESIZE": "true",
             "SELKIES_FRAMERATE": "30-30",
-            "SELKIES_VIDEO_CRF": "30-30",
+            # Allow quality tuning (initial 30, range 22-34) so users can
+            # sharpen text further when bandwidth allows.
+            "SELKIES_VIDEO_CRF": "30,22-34",
             "SELKIES_ENCODER": "h264enc",
             "SELKIES_CPU_ENCODE_THREADING": "true|locked",
             "SELKIES_VIDEO_STREAMING_MODE": "false|locked",
@@ -664,6 +669,66 @@ def create_container(user: str, ip: str) -> None:
     log.info("created %s at %s", name, ip)
 
 
+DESIRED_MEM = 2560 * 1024 * 1024
+DESIRED_NANOCPUS = 1_500_000_000
+
+
+def container_is_stale(container) -> bool:
+    """True when a session predates the current session configuration."""
+    try:
+        env = {}
+        for item in (container.attrs.get("Config", {}).get("Env") or []):
+            if "=" in item:
+                key, value = item.split("=", 1)
+                env[key] = value
+    except Exception:
+        return False
+    for key in ("SELKIES_MANUAL_RESOLUTION", "SELKIES_MANUAL_WIDTH", "SELKIES_MANUAL_HEIGHT"):
+        if env.get(key) not in (None, "", "0", "false", "False"):
+            return True
+    host = container.attrs.get("HostConfig") or {}
+    if host.get("Memory") not in (None, DESIRED_MEM):
+        return True
+    if host.get("NanoCpus") not in (None, DESIRED_NANOCPUS):
+        return True
+    return False
+
+
+def recreate_container(user: str) -> str:
+    """Recreate a session so immutable settings (env, limits) take effect.
+
+    The ff-<user>-config volume survives, so files, Firefox profile and proot
+    apps are kept; only the container layer and the live desktop are replaced.
+    """
+    name = f"ff-{user}"
+    ip = None
+    try:
+        container = dc().containers.get(name)
+    except NotFound:
+        container = None
+    if container is not None:
+        ip = container_ip_on(container, BROWSER_NET)
+        try:
+            container.reload()
+            if container.status == "paused":
+                container.unpause()
+        except Exception:
+            pass
+        try:
+            container.stop(timeout=10)
+        except Exception:
+            pass
+        container.remove(force=True)
+    if not ip:
+        row = query("SELECT ip FROM sessions WHERE username = ?", (user,))
+        ip = row[0]["ip"] if row and row[0]["ip"] else None
+    if not ip:
+        ip = allocate_ip(user)
+    write_policies(user)
+    create_container(user, ip)
+    return ip
+
+
 async def wait_healthy(ip: str, timeout: int = 120) -> bool:
     deadline = time.time() + timeout
     assert _http is not None
@@ -691,7 +756,13 @@ async def ensure_session(user: str, groups: str = "admins,apps-all,ai-dev-core,b
             if container.status != "running":
                 if running_sessions() >= MAX_SESSIONS:
                     raise CapacityError("all browser slots are busy")
-                await asyncio.to_thread(container.start)
+                if container_is_stale(container):
+                    log.info("recreating %s to apply current settings", name)
+                    await asyncio.to_thread(recreate_container, user)
+                    container = await asyncio.to_thread(dc().containers.get, name)
+                    ip = container_ip_on(container, BROWSER_NET)
+                else:
+                    await asyncio.to_thread(container.start)
             if not ip:
                 for _ in range(20):
                     await asyncio.sleep(1)
@@ -2611,7 +2682,11 @@ async def workspace_control(action: str, request: Request):
     if action in ("start", "restart"):
         if container is not None:
             try:
-                await asyncio.to_thread(cycle_container, container)
+                if action == "restart" or container_is_stale(container):
+                    async with lock_for(user):
+                        await asyncio.to_thread(recreate_container, user)
+                elif container.status != "running":
+                    await asyncio.to_thread(cycle_container, container)
             except Exception as exc:
                 raise HTTPException(status_code=503, detail=f"restart failed: {exc}")
         try:
