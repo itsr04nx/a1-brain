@@ -1,0 +1,21 @@
+{{ .Title }}
+
+Hi {{ .DisplayName }},
+
+A one-time verification code has been generated for your session:
+
+----------------------------------------
+One-Time Code:
+
+{{ .OneTimeCode }}
+----------------------------------------
+
+This code expires shortly. Never share it with anyone.
+
+If you did NOT initiate this request, your credentials may be compromised. Revoke this code immediately using the link below:
+
+{{ .RevocationLinkURL }}
+
+This code was requested from IP {{ .RemoteIP }}.
+
+Protected by Authelia SSO - Rohan Run Place

@@ -21,7 +21,8 @@
 - **Identity Verification & Enrollment Notifier**:
   - `address`: `smtp://mailserver:587`
   - `username`: `admin@rohan.run.place`
-  - `sender`: `Authelia <admin@rohan.run.place>`
+  - `sender`: `Authelia SSO <sso@rohan.run.place>`
+  - `template_path`: `/config/email_templates` (custom high-contrast light theme email templates for Event, OTC, and JWT)
   - `tls.skip_verify`: `true`
   - `disable_startup_check`: `true` (ensures reboot-proof resilience if mailserver starts after Authelia)
 

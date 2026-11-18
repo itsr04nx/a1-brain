@@ -1,0 +1,15 @@
+{{ .Title }}
+
+Hi {{ .DisplayName }},
+
+A security action was requested for your account. Please visit the following link to confirm and continue:
+
+{{ .LinkURL }}
+
+If you did NOT make this request, your credentials may be compromised. Revoke this link immediately using the link below:
+
+{{ .RevocationLinkURL }}
+
+This request was initiated from IP {{ .RemoteIP }}.
+
+Protected by Authelia SSO - Rohan Run Place
