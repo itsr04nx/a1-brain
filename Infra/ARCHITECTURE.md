@@ -81,6 +81,13 @@
    - Userdb Attrs: `mail=user,=uid=5000,=gid=5000`
    - Authentication Mechanism: Direct LDAP Bind (`DOVECOT_AUTH_BIND=yes`).
 
+4. **LLDAP web UI auth endpoints (nginx routing)**:
+   - `POST /auth/opaque/register/{start,finish}` is the OPAQUE password registration used by **both** password change and user creation. nginx must send `/auth/opaque/`, `/auth/simple/`, and `/auth/reset/` **directly to `lldap:17170`**, exactly like `/api/`.
+   - These paths must never fall through to the SSO bridge on `172.18.0.1:17171`. The bridge is a catch-all: any path it does not explicitly handle is answered with the LLDAP HTML shell and `HTTP 200`. The browser's OPAQUE client then received HTML instead of a registration response and aborted with `Could not initiate password change`; user creation left a row with `password_hash = NULL` (symptom: "Could not parse error" after create, account cannot log in).
+   - Diagnosis signature: nginx shows `POST /auth/opaque/register/start 200` with **no** matching `register/finish` ever.
+   - `/auth/refresh` and `/auth/logout` intentionally stay on the bridge: it mints the SSO token that LLDAP accepts.
+   - Repairing an account created before the fix: `docker exec lldap /app/lldap_set_password --base-url http://localhost:17170/ --token <admin-jwt> --username <user> --password <pw>` (native OPAQUE client, works where the WASM UI failed), then add missing groups via GraphQL `addUserToGroup(userId: "...", groupId: N)`.
+
 ---
 
 ## 4. Mailbox Separation & Multi-Tenancy Architecture
