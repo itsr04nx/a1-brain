@@ -739,6 +739,7 @@
     `;
 
     document.body.appendChild(portal);
+    wireWorkspaceCard();
 
     // Logout action
     document.getElementById('portal-logout-btn').addEventListener('click', async () => {
@@ -800,16 +801,141 @@
 
   function renderCardHtml(app) {
     const searchText = `${app.name} ${app.category} ${app.subdomain}`;
-    return `
-      <a class="app-card" href="${escapeHtml(app.url)}" target="_blank" rel="noopener noreferrer" data-category="${escapeHtml(app.category)}" data-search-text="${escapeHtml(searchText)}" title="Open ${escapeHtml(app.name)}">
+    const body = `
         <div class="app-icon-wrapper">
           <img class="app-real-logo" src="${escapeHtml(app.logo)}" alt="${escapeHtml(app.name)} logo" loading="lazy" onerror="this.onerror=null;this.src='/portal/icons/lldap.svg';" />
         </div>
         <div class="app-meta">
           <h2 class="app-name">${escapeHtml(app.name)}</h2>
-        </div>
+        </div>`;
+
+    if (app.id !== 'myapps') {
+      return `
+      <a class="app-card" href="${escapeHtml(app.url)}" target="_blank" rel="noopener noreferrer" data-category="${escapeHtml(app.category)}" data-search-text="${escapeHtml(searchText)}" title="Open ${escapeHtml(app.name)}">
+        ${body}
       </a>
     `;
+    }
+
+    return `
+      <div class="app-card app-card-workspace" data-category="${escapeHtml(app.category)}" data-search-text="${escapeHtml(searchText)}">
+        <a class="app-card-main" href="${escapeHtml(app.url)}" target="_blank" rel="noopener noreferrer" title="Open ${escapeHtml(app.name)}">
+          ${body}
+        </a>
+        <div class="ws-bar">
+          <span class="ws-state" data-ws-state="unknown">checking&hellip;</span>
+          <div class="ws-actions">
+            <button type="button" class="ws-btn" data-ws-action="pause" title="Pause the workspace (freezes it, keeps memory)">Pause</button>
+            <button type="button" class="ws-btn" data-ws-action="stop" title="Stop the workspace (frees memory, keeps your files)">Stop</button>
+            <button type="button" class="ws-btn ws-btn-primary" data-ws-action="restart" title="Restart the workspace (fresh desktop and Firefox)">Restart</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // -------------------------------------------------------------------------
+  // MyApps workspace controls (pause / stop / restart)
+  // -------------------------------------------------------------------------
+  let wsState = 'unknown';
+  let wsBusy = false;
+
+  function wsApi(path, method) {
+    return fetch('/portal/api/workspace' + path, {
+      method: method || 'GET',
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' }
+    }).then(async (res) => {
+      let data = null;
+      try { data = await res.json(); } catch (e) {}
+      if (!res.ok) {
+        throw new Error((data && (data.detail || data.error)) || ('HTTP ' + res.status));
+      }
+      return data || {};
+    });
+  }
+
+  function applyWorkspaceState(state) {
+    wsState = state || 'unknown';
+    const label = document.querySelector('[data-ws-state]');
+    const pause = document.querySelector('.ws-btn[data-ws-action="pause"], .ws-btn[data-ws-action="resume"]');
+    const stop = document.querySelector('.ws-btn[data-ws-action="stop"], .ws-btn[data-ws-action="start"]');
+    const restart = document.querySelector('.ws-btn[data-ws-action="restart"]');
+    const names = {
+      running: ['Running', 'ok'],
+      paused: ['Paused', 'warn'],
+      exited: ['Stopped', 'off'],
+      created: ['Stopped', 'off'],
+      absent: ['Not started', 'off'],
+      dead: ['Error', 'bad'],
+      unknown: ['Unavailable', 'off']
+    };
+    const info = names[wsState] || [wsState, 'off'];
+    if (label) {
+      label.textContent = info[0];
+      label.dataset.wsState = info[1];
+    }
+    if (pause) {
+      const paused = wsState === 'paused';
+      pause.textContent = paused ? 'Resume' : 'Pause';
+      pause.dataset.wsAction = paused ? 'resume' : 'pause';
+      pause.disabled = wsBusy || !(wsState === 'running' || wsState === 'paused');
+    }
+    if (stop) {
+      const stopped = wsState !== 'running' && wsState !== 'paused';
+      stop.textContent = stopped ? 'Start' : 'Stop';
+      stop.dataset.wsAction = stopped ? 'start' : 'stop';
+      stop.disabled = wsBusy;
+    }
+    if (restart) restart.disabled = wsBusy;
+  }
+
+  async function refreshWorkspaceState() {
+    if (wsBusy) return;
+    try {
+      const data = await wsApi('');
+      applyWorkspaceState(data.state);
+    } catch (e) {
+      applyWorkspaceState('unknown');
+    }
+  }
+
+  async function runWorkspaceAction(action) {
+    if (wsBusy) return;
+    wsBusy = true;
+    const label = document.querySelector('[data-ws-state]');
+    if (label) { label.textContent = action + '\u2026'; label.dataset.wsState = 'busy'; }
+    document.querySelectorAll('.ws-btn').forEach((b) => { b.disabled = true; });
+    try {
+      const data = await wsApi('/' + action, 'POST');
+      wsState = data.state || 'running';
+    } catch (e) {
+      wsState = 'unknown';
+      if (label) { label.textContent = 'Failed'; label.dataset.wsState = 'bad'; }
+    } finally {
+      wsBusy = false;
+      applyWorkspaceState(wsState);
+      if (wsState === 'unknown') setTimeout(refreshWorkspaceState, 3000);
+    }
+  }
+
+  function wireWorkspaceCard() {
+    const card = document.querySelector('.app-card-workspace');
+    if (!card) return;
+    card.addEventListener('click', (e) => {
+      const btn = e.target.closest('.ws-btn');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      runWorkspaceAction(btn.dataset.wsAction);
+    });
+    refreshWorkspaceState();
+    setInterval(() => {
+      if (!document.hidden) refreshWorkspaceState();
+    }, 15000);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) refreshWorkspaceState();
+    });
   }
 
   function escapeHtml(str) {

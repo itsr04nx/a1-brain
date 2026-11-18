@@ -2196,3 +2196,83 @@ code, pre, .font-mono {
     display: none !important;
   }
 }
+
+
+/* ------------------------------------------------------------------ */
+/* MyApps workspace controls (pause / stop / restart)                 */
+/* ------------------------------------------------------------------ */
+.app-card-workspace {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  cursor: default;
+}
+.app-card-workspace:hover {
+  transform: none;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+.app-card-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 24px;
+  text-decoration: none;
+  min-width: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.ws-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+.ws-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.ws-state::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+.ws-state[data-ws-state="ok"]::before { background: #16a34a; }
+.ws-state[data-ws-state="warn"]::before { background: #d97706; }
+.ws-state[data-ws-state="bad"]::before { background: #dc2626; }
+.ws-state[data-ws-state="busy"]::before { background: #2563eb; }
+.ws-actions { display: flex; gap: 6px; }
+.ws-btn {
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.ws-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #94a3b8; }
+.ws-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.ws-btn-primary { background: #2563eb; border-color: #2563eb; color: #ffffff; }
+.ws-btn-primary:hover:not(:disabled) { background: #1d4ed8; border-color: #1d4ed8; }
+@media (max-width: 640px) {
+  .app-card-main { padding: 14px 16px; gap: 14px; }
+  .ws-bar { padding: 10px 14px; }
+}

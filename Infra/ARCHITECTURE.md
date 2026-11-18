@@ -184,3 +184,21 @@ To offload agent execution, model tool invocation, testing suites, and sandbox r
 - Thunderbird autoconfig is served at `https://autoconfig.rohan.run.place/mail/config-v1.1.xml` and advertises IMAP 993 SSL + SMTP 465 SSL / 587 STARTTLS, username `%EMAILADDRESS%`.
 - Authentication is LDAP-backed: the username is the LLDAP email (`user@rohan.run.place`) and the password is the **LLDAP password**. LLDAP exposes its `email` column as the LDAP `mail` attribute; there is no separate `mail` attribute.
 - Outbound mail to external domains is still blocked by Oracle's tenancy-wide TCP 25 egress block; internal delivery works.
+
+#### Workspace controls (Pause / Stop / Restart)
+- The MyApps tile on `auth.rohan.run.place` is the **only** place with controls: Pause, Stop and Restart. They are rendered by `authelia/nginx/portal/portal.js` and styled by `portal.css`; the streaming page itself has no controls.
+- Requests go to `https://auth.rohan.run.place/portal/api/workspace[/{action}]`. nginx gates that location with `auth_request /internal/authelia/authz` and forwards it to `browser-gateway` with a `Remote-User` header. The gateway only ever acts on `ff-<Remote-User>`, so a user cannot control another user's workspace.
+- Semantics: **Pause** = `docker pause` (freezes CPU, keeps memory); **Resume** = `docker unpause`; **Stop** = `docker stop -t 15` (frees memory, keeps the `ff-<user>-config` volume and files); **Start** = `docker start` plus health wait; **Restart** = stop + start, giving a fresh labwc/Firefox session.
+- Docker refuses `stop`/`kill` on a paused container, so Stop and Restart unpause first.
+- Unauthenticated calls return `401 {"detail":"unauthenticated"}` via the `@ws_unauth` location instead of an HTML redirect, so the card can show a clear failure.
+- The idle reaper still stops sessions after `IDLE_MINUTES=20` with no viewer; the card then shows `Stopped` and Start brings the session back.
+- Bump `portal.js?v=` / `portal.css?v=` in `nginx/default.conf` whenever the portal assets change, or browsers keep the old bundle.
+
+#### Desktop resilience (Firefox relaunch)
+- `selkies-desktop` is the foreground session process. If it exits, `startwm_wayland.sh` kills labwc and the whole desktop ends, which looks like a "missing desktop".
+- Closing the last Firefox window leaves no taskbar entry, which looked like "Firefox won't reopen".
+- `seed_desktop()` in the gateway now seeds every new session (and existing ones idempotently):
+  - `~/.config/selkies-desktop/config` with `launchers = firefox.desktop` and `favorites = firefox.desktop`, giving a quick-launch button beside the start button and a pinned start-menu entry;
+  - `~/Desktop/Firefox.desktop`, a double-click desktop icon;
+  - `touch ~/.config/panel-reload` so the running panel rescans immediately.
+- Firefox tolerates a stale `.parentlock` after an unclean stop, so Restart reliably brings the browser back.

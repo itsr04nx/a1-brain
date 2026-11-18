@@ -549,6 +549,51 @@ def upsert_session(
 # --------------------------------------------------------------------------- #
 # container lifecycle
 # --------------------------------------------------------------------------- #
+DESKTOP_SEED_CONFIG = """launchers = firefox.desktop
+favorites = firefox.desktop
+"""
+
+DESKTOP_SEED_ICON = """[Desktop Entry]
+Type=Application
+Name=Firefox
+Comment=Open the web browser
+Exec=/usr/bin/firefox
+Icon=firefox
+Terminal=false
+Categories=Network;WebBrowser;
+"""
+
+
+def seed_desktop(container) -> None:
+    """Give every session an obvious way to reopen Firefox.
+
+    The Selkies panel has no taskbar entry once the last Firefox window is
+    closed, so a quick-launch button and a desktop icon make relaunching
+    obvious instead of requiring a full workspace restart.
+    """
+    script = (
+        "mkdir -p /config/.config/selkies-desktop /config/Desktop\n"
+        "if [ ! -f /config/.config/selkies-desktop/config ]; then\n"
+        "  printf '%s' \"$SEED_CONFIG\" > /config/.config/selkies-desktop/config\n"
+        "fi\n"
+        "printf '%s' \"$SEED_ICON\" > /config/Desktop/Firefox.desktop\n"
+        "chmod 755 /config/Desktop/Firefox.desktop\n"
+        "chown -R 1000:1000 /config/Desktop /config/.config/selkies-desktop\n"
+        "touch /config/.config/panel-reload\n"
+    )
+    try:
+        container.exec_run(
+            ["sh", "-c", script],
+            user="root",
+            environment={
+                "SEED_CONFIG": DESKTOP_SEED_CONFIG,
+                "SEED_ICON": DESKTOP_SEED_ICON,
+            },
+        )
+    except Exception as exc:
+        log.warning("desktop seed failed for %s: %s", container.name, exc)
+
+
 def create_container(user: str, ip: str) -> None:
     name = f"ff-{user}"
     policies = os.path.join(PROFILES_DIR, user, "policies.json")
@@ -560,6 +605,11 @@ def create_container(user: str, ip: str) -> None:
             all_hosts[r["keyword"]] = NGINX_IP
     except Exception:
         pass
+
+    # Mail protocol names must win over goto keywords: they need IMAP/SMTP,
+    # and nginx only listens on 80/443.
+    for _mail_host in ("mail", "webmail", "mail.rohan.run.place", "webmail.rohan.run.place"):
+        all_hosts[_mail_host] = MAIL_IP
 
     container = dc().containers.create(
         FF_IMAGE,
@@ -610,6 +660,7 @@ def create_container(user: str, ip: str) -> None:
     browser_net.connect(container, ipv4_address=ip, aliases=[name])
     dc().networks.get(INTERNAL_NET).connect(container)
     container.start()
+    seed_desktop(container)
     log.info("created %s at %s", name, ip)
 
 
@@ -2494,6 +2545,101 @@ async def status():
         "allowed_groups": sorted(ALLOWED_GROUPS),
         "sessions": [dict(row) for row in rows],
     }
+
+
+# --------------------------------------------------------------------------- #
+# per-user workspace controls (pause / stop / restart from the auth portal)
+# --------------------------------------------------------------------------- #
+WORKSPACE_ACTIONS = {"pause", "resume", "stop", "start", "restart"}
+
+
+def workspace_container(user: str):
+    try:
+        return dc().containers.get(f"ff-{user}")
+    except NotFound:
+        return None
+
+
+def workspace_state(container) -> str:
+    if container is None:
+        return "absent"
+    try:
+        container.reload()
+    except Exception:
+        pass
+    return container.status
+
+
+def cycle_container(container) -> None:
+    """Hard stop + start: gives a brand new desktop, Firefox and app stack."""
+    try:
+        # Unpause first: docker refuses stop/kill on a paused container.
+        container.reload()
+        if container.status == "paused":
+            container.unpause()
+    except Exception:
+        pass
+    try:
+        container.stop(timeout=15)
+    except Exception:
+        try:
+            container.kill()
+        except Exception:
+            pass
+    container.start()
+
+
+@app.get("/api/workspace")
+async def workspace_status(request: Request):
+    user = sanitize(request.headers.get("remote-user", ""))
+    if not user:
+        raise HTTPException(status_code=401, detail="unauthenticated")
+    container = await asyncio.to_thread(workspace_container, user)
+    return {"user": user, "state": await asyncio.to_thread(workspace_state, container)}
+
+
+@app.post("/api/workspace/{action}")
+async def workspace_control(action: str, request: Request):
+    user = sanitize(request.headers.get("remote-user", ""))
+    if not user:
+        raise HTTPException(status_code=401, detail="unauthenticated")
+    if action not in WORKSPACE_ACTIONS:
+        raise HTTPException(status_code=400, detail="unknown action")
+
+    container = await asyncio.to_thread(workspace_container, user)
+
+    if action in ("start", "restart"):
+        if container is not None:
+            try:
+                await asyncio.to_thread(cycle_container, container)
+            except Exception as exc:
+                raise HTTPException(status_code=503, detail=f"restart failed: {exc}")
+        try:
+            upstream = await ensure_session(user)
+        except CapacityError as exc:
+            raise HTTPException(status_code=429, detail=str(exc))
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=str(exc))
+        return {"user": user, "state": "running", "upstream": upstream}
+
+    if container is None:
+        raise HTTPException(status_code=404, detail="workspace not created yet")
+
+    try:
+        async with lock_for(user):
+            await asyncio.to_thread(container.reload)
+            if action == "pause" and container.status == "running":
+                await asyncio.to_thread(container.pause)
+            elif action == "resume" and container.status == "paused":
+                await asyncio.to_thread(container.unpause)
+            elif action == "stop" and container.status in ("running", "paused"):
+                if container.status == "paused":
+                    await asyncio.to_thread(container.unpause)
+                await asyncio.to_thread(container.stop, timeout=15)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    return {"user": user, "state": await asyncio.to_thread(workspace_state, container)}
 
 
 @app.post("/api/provision/{username}")
