@@ -61,6 +61,8 @@ ALLOWED_GROUPS = {
     if g.strip()
 }
 ADMIN_TOKEN = os.getenv("ADMIN_TOKEN", "")
+ADGUARD_USER = os.getenv("ADGUARD_USER", "admin")
+ADGUARD_PASS = os.getenv("ADGUARD_PASS", "")
 TZ = os.getenv("TZ", "Asia/Kolkata")
 
 BROWSER_NET = "browser-net"
@@ -2233,13 +2235,13 @@ async def api_dns_test(name: str):
 async def api_firewall_status():
     assert _http is not None
     try:
-        r = await _http.get("http://172.30.0.5:3000/control/status", auth=("admin", "__REDACTED__"), timeout=2.0)
+        r = await _http.get("http://172.30.0.5:3000/control/status", auth=(ADGUARD_USER, ADGUARD_PASS), timeout=2.0)
         status_data = r.json()
     except Exception as e:
         status_data = {"error": str(e), "running": False}
 
     try:
-        r_stats = await _http.get("http://172.30.0.5:3000/control/stats", auth=("admin", "__REDACTED__"), timeout=2.0)
+        r_stats = await _http.get("http://172.30.0.5:3000/control/stats", auth=(ADGUARD_USER, ADGUARD_PASS), timeout=2.0)
         stats_data = r_stats.json()
     except Exception:
         stats_data = {}

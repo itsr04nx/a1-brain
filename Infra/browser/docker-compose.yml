@@ -69,6 +69,8 @@ services:
       IDLE_MINUTES: "20"
       ALLOWED_GROUPS: "admins,apps-all,ai-dev-core,browser"
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      ADGUARD_USER: ${ADGUARD_USER:-admin}
+      ADGUARD_PASS: ${ADGUARD_PASS:-}
       TZ: Asia/Kolkata
     volumes:
       - /home/ubuntu/Workspace/browser/profiles:/home/ubuntu/Workspace/browser/profiles
