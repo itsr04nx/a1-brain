@@ -572,7 +572,6 @@ def create_container(user: str, ip: str) -> None:
             "/home/ubuntu/Workspace/browser/internal-ca.crt": {"bind": "/usr/lib/firefox/distribution/internal-ca.crt", "mode": "ro"},
             "/home/ubuntu/Workspace/browser/selkies-proot": {"bind": "/usr/local/bin/selkies-proot", "mode": "ro"},
             "/home/ubuntu/Workspace/browser/00-proxy.sh": {"bind": "/etc/profile.d/00-proxy.sh", "mode": "ro"},
-            "/home/ubuntu/Workspace/browser/proot-repo/metadata": {"bind": "/usr/share/selkies/web/api/apps", "mode": "ro"},
         },
         extra_hosts=all_hosts,
         dns=[GATEWAY_IP, "172.30.0.5"],

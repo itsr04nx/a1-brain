@@ -153,6 +153,7 @@ services:
       - ./nginx/mail-autoconfig:/usr/share/nginx/html/autoconfig:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/portal:/usr/share/nginx/html/portal:ro
+      - /home/ubuntu/Workspace/browser/proot-repo/metadata:/usr/share/nginx/html/myapps-apps:ro
     networks:
       authelia_default:
         ipv4_address: 172.18.0.4
