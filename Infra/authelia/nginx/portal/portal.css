@@ -752,9 +752,9 @@ h5.text-xl.font-semibold {
   gap: 12px !important;
 }
 
-/* -------------------------------------------------------------------------
-   PRIMARY "ADD" BUTTONS (IMAGE 3 FIX)
-   ------------------------------------------------------------------------- */
+/* ==========================================================================
+   PRIMARY "ADD" BUTTONS (SETTINGS)
+   ========================================================================== */
 button[id$="-add"],
 #one-time-password-add,
 #webauthn-credential-add,
@@ -777,9 +777,15 @@ button:has(.text-primary-foreground):not(#settings-menu) {
   gap: 8px !important;
   cursor: pointer !important;
   opacity: 1 !important;
+  width: auto !important;
+  max-width: 140px !important;
+  min-width: 80px !important;
+  height: 38px !important;
 }
 
 button[id$="-add"]:hover,
+#one-time-password-add:hover,
+#webauthn-credential-add:hover,
 main.grow button.bg-primary:hover {
   background-color: #1d4ed8 !important;
   border-color: #1d4ed8 !important;
@@ -797,57 +803,61 @@ main.grow button.bg-primary:disabled {
   box-shadow: none !important;
 }
 
-/* -------------------------------------------------------------------------
-   CREDENTIAL CARD LAYOUT & TEXT FIX (IMAGE 3 FIX)
-   ------------------------------------------------------------------------- */
-#one-time-password,
-[id^="webauthn-credential-"],
-div:has(> #one-time-password),
-div:has(> [id^="webauthn-credential-"]) {
-  grid-column: 1 / -1 !important;
-  grid-column: span 12 / span 12 !important;
-  max-width: 680px !important;
-  width: 100% !important;
-  margin-top: 12px !important;
+div:has(> #one-time-password-add),
+div:has(> #webauthn-credential-add) {
+  width: auto !important;
+  max-width: fit-content !important;
+  margin-bottom: 12px !important;
 }
 
+/* ==========================================================================
+   CREDENTIAL CARDS LAYOUT (TOTP & WEBAUTHN)
+   ========================================================================== */
 #one-time-password,
-[id^="webauthn-credential-"] {
+div[data-slot="card"][id^="webauthn-credential-"],
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button):not(input):not(span) {
   width: 100% !important;
-  min-width: 340px !important;
+  max-width: 480px !important;
+  min-width: 320px !important;
   background-color: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   border-radius: 12px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
   transition: all 0.2s ease !important;
   padding: 0 !important;
+  margin-top: 8px !important;
   display: block !important;
+  box-sizing: border-box !important;
 }
 
 #one-time-password:hover,
-[id^="webauthn-credential-"]:hover {
+div[data-slot="card"][id^="webauthn-credential-"]:hover,
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button):not(input):not(span):hover {
   border-color: #cbd5e1 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
 }
 
-#one-time-password .p-6,
-[id^="webauthn-credential-"] .p-6 {
-  padding: 18px 24px !important;
+#one-time-password > div.p-6,
+div[data-slot="card"][id^="webauthn-credential-"] > div.p-6,
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) > div.p-6 {
+  padding: 16px 20px !important;
   display: block !important;
   width: 100% !important;
   box-sizing: border-box !important;
 }
 
 #one-time-password .flex.items-center.h-full.w-full,
-[id^="webauthn-credential-"] .flex.items-center.h-full.w-full {
+div[data-slot="card"][id^="webauthn-credential-"] .flex.items-center.h-full.w-full,
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) .flex.items-center.h-full.w-full {
   display: flex !important;
   align-items: center !important;
   width: 100% !important;
-  gap: 16px !important;
+  gap: 14px !important;
 }
 
 #one-time-password .shrink-0,
-[id^="webauthn-credential-"] .shrink-0 {
+div[data-slot="card"][id^="webauthn-credential-"] .shrink-0,
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) .shrink-0 {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -861,7 +871,8 @@ div:has(> [id^="webauthn-credential-"]) {
 }
 
 #one-time-password .shrink-0 svg,
-[id^="webauthn-credential-"] .shrink-0 svg {
+div[data-slot="card"][id^="webauthn-credential-"] .shrink-0 svg,
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) .shrink-0 svg {
   width: 24px !important;
   height: 24px !important;
   stroke: #2563eb !important;
@@ -869,66 +880,149 @@ div:has(> [id^="webauthn-credential-"]) {
 }
 
 #one-time-password .flex-1.min-w-0,
-[id^="webauthn-credential-"] .flex-1.min-w-0 {
+div[data-slot="card"][id^="webauthn-credential-"] .flex-1.min-w-0,
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) .flex-1.min-w-0 {
   flex: 1 1 auto !important;
   min-width: 0 !important;
 }
 
 #one-time-password [id$="-description"],
-[id^="webauthn-credential-"] [id$="-description"] {
+div[data-slot="card"][id^="webauthn-credential-"] [id$="-description"],
+span[id^="webauthn-credential-"][id$="-description"] {
   color: #0f172a !important;
-  font-size: 1.05rem !important;
+  font-size: 1rem !important;
   font-weight: 700 !important;
-  line-height: 1.4 !important;
-  display: inline-block !important;
+  line-height: 1.3 !important;
+  display: inline !important;
+}
+
+div[data-slot="card"][id^="webauthn-credential-"] span.px-4,
+#webauthn-credentials-panel span.px-4 {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  color: #64748b !important;
+  font-size: 0.8rem !important;
+  font-weight: 500 !important;
 }
 
 #one-time-password span.text-muted-foreground,
-[id^="webauthn-credential-"] span.text-muted-foreground {
+div[data-slot="card"][id^="webauthn-credential-"] span.text-muted-foreground,
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) span.text-muted-foreground {
   color: #64748b !important;
   white-space: nowrap !important;
-  font-size: 0.825rem !important;
+  font-size: 0.8rem !important;
   display: block !important;
-  line-height: 1.5 !important;
+  line-height: 1.4 !important;
   margin-top: 2px !important;
 }
 
-/* Info and Delete action icon buttons on credential card */
+/* Action button container on right side of card */
+#one-time-password .justify-end,
+div[data-slot="card"][id^="webauthn-credential-"] .justify-end,
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) .justify-end {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+/* Action buttons: Info, Edit, Delete */
 #one-time-password button,
-[id^="webauthn-credential-"] button {
+button[id^="webauthn-credential-"][id$="-information"],
+button[id^="webauthn-credential-"][id$="-edit"],
+button[id^="webauthn-credential-"][id$="-delete"],
+div[data-slot="card"][id^="webauthn-credential-"] button:not(#webauthn-credential-add),
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) button {
   background-color: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
-  color: #64748b !important;
-  border-radius: 6px !important;
-  width: 34px !important;
-  height: 34px !important;
+  color: #475569 !important;
+  border-radius: 8px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  max-width: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
   padding: 0 !important;
+  margin: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   transition: all 0.15s ease !important;
   cursor: pointer !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  flex-shrink: 0 !important;
 }
 
+/* Action button SVG icons */
+#one-time-password button svg,
+button[id^="webauthn-credential-"][id$="-information"] svg,
+button[id^="webauthn-credential-"][id$="-edit"] svg,
+button[id^="webauthn-credential-"][id$="-delete"] svg,
+div[data-slot="card"][id^="webauthn-credential-"] button svg,
+#webauthn-credentials-panel div[id^="webauthn-credential-"]:not(button) button svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: #475569 !important;
+  color: #475569 !important;
+  stroke-width: 2 !important;
+}
+
+/* Hover on Info & Edit */
 #one-time-password button:hover,
-[id^="webauthn-credential-"] button:hover {
+button[id^="webauthn-credential-"][id$="-information"]:hover,
+button[id^="webauthn-credential-"][id$="-edit"]:hover,
+div[data-slot="card"][id^="webauthn-credential-"] button:hover {
   background-color: #f1f5f9 !important;
-  color: #0f172a !important;
   border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
+#one-time-password button:hover svg,
+button[id^="webauthn-credential-"][id$="-information"]:hover svg,
+button[id^="webauthn-credential-"][id$="-edit"]:hover svg {
+  stroke: #0f172a !important;
+  color: #0f172a !important;
+}
+
+/* Delete Button Specifics (Red on hover) */
+button[id*="-delete"],
+button[id*="delete"],
 #one-time-password button:has(svg path[d*="3 6"]),
-[id^="webauthn-credential-"] button:has(svg path[d*="3 6"]),
-button[id*="delete"] {
+div[data-slot="card"][id^="webauthn-credential-"] button:has(svg path[d*="3 6"]) {
   color: #dc2626 !important;
 }
 
+button[id*="-delete"] svg,
+button[id*="delete"] svg,
+#one-time-password button:has(svg path[d*="3 6"]) svg,
+div[data-slot="card"][id^="webauthn-credential-"] button:has(svg path[d*="3 6"]) svg {
+  stroke: #dc2626 !important;
+  color: #dc2626 !important;
+}
+
+button[id*="-delete"]:hover,
+button[id*="delete"]:hover,
 #one-time-password button:has(svg path[d*="3 6"]):hover,
-[id^="webauthn-credential-"] button:has(svg path[d*="3 6"]):hover {
+div[data-slot="card"][id^="webauthn-credential-"] button:has(svg path[d*="3 6"]):hover {
   background-color: #fee2e2 !important;
   border-color: #fca5a5 !important;
   color: #b91c1c !important;
 }
+
+button[id*="-delete"]:hover svg,
+button[id*="delete"]:hover svg,
+#one-time-password button:has(svg path[d*="3 6"]):hover svg,
+div[data-slot="card"][id^="webauthn-credential-"] button:has(svg path[d*="3 6"]):hover svg {
+  stroke: #b91c1c !important;
+  color: #b91c1c !important;
+}
+
 
 /* -------------------------------------------------------------------------
    OPTIONS CARD (RADIO BUTTONS)
