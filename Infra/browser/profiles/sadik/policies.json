@@ -1,0 +1,105 @@
+{
+  "policies": {
+    "Certificates": {
+      "Install": [
+        "/usr/lib/firefox/distribution/internal-ca.crt"
+      ]
+    },
+    "Proxy": {
+      "Mode": "autoConfig",
+      "AutoConfigURL": "http://browser-gateway:8080/pac",
+      "UseProxyForDNS": true,
+      "Locked": true
+    },
+    "DNSOverHTTPS": {
+      "Enabled": false,
+      "Locked": true
+    },
+    "ResumePreviousSession": true,
+    "Homepage": {
+      "URL": "https://auth.rohan.run.place/",
+      "StartPage": "previous-session",
+      "Locked": false
+    },
+    "DisableTelemetry": true,
+    "DisableFirefoxAccounts": true,
+    "DisablePocket": true,
+    "DisableFeedbackCommands": true,
+    "DisableFormHistory": true,
+    "PasswordManagerEnabled": false,
+    "OfferToSaveLogins": false,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "FirefoxHome": {
+      "Search": false,
+      "TopSites": false,
+      "SponsoredTopSites": false,
+      "Pocket": false,
+      "SponsoredPocket": false,
+      "Snippets": false,
+      "Locked": true
+    },
+    "Preferences": {
+      "network.proxy.type": {
+        "Value": 2,
+        "Status": "locked"
+      },
+      "network.proxy.autoconfig_url": {
+        "Value": "http://browser-gateway:8080/pac",
+        "Status": "locked"
+      },
+      "network.proxy.socks_remote_dns": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "network.dns.disablePrefetch": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "network.trr.mode": {
+        "Value": 5,
+        "Status": "locked"
+      },
+      "network.proxy.allow_hijacking_localhost": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.fixup.alternate.enabled": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.fixup.dns_first_for_single_words": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "security.enterprise_roots.enabled": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "browser.startup.page": {
+        "Value": 3,
+        "Status": "default"
+      },
+      "browser.sessionstore.resume_from_crash": {
+        "Value": true,
+        "Status": "default"
+      },
+      "browser.startup.homepage": {
+        "Value": "https://auth.rohan.run.place/",
+        "Status": "default"
+      },
+      "browser.newtabpage.enabled": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.tabs.warnOnClose": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "datareporting.policy.dataSubmissionEnabled": {
+        "Value": false,
+        "Status": "locked"
+      }
+    }
+  }
+}

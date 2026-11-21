@@ -167,3 +167,57 @@ Verify the restored system with these tests:
    - `https://auth.rohan.run.place/` -> Authelia login page appears.
    - `https://user.rohan.run.place/` -> Authelia prompts for admin, then LLDAP web UI displays.
    - `https://mail.rohan.run.place/` -> SnappyMail login appears, logging in with `admin@rohan.run.place` opens inbox immediately.
+
+
+---
+
+## 8. Selkies / Firefox User Workspace Persistence & Disaster Recovery
+
+### 8.1 Persistence Architecture
+Each user desktop container (`ff-rohan`, `ff-sadik`, `ff-admin`, `ff-soham`) mounts `/config` to a dedicated Docker named volume (`ff-<user>-config`).
+- **Location**: `/var/lib/docker/volumes/ff-<user>-config/_data` on ext4 NVMe block storage (`/dev/sda1`).
+- **Persistence Scope**:
+  - Desktop files, Downloads, personal documents, and Git repos.
+  - Firefox profiles: cookies, saved session tabs, history, bookmarks, TLS state (`.config/mozilla`).
+  - Thunderbird profiles: IMAP mailstores, account setups, address books (`.thunderbird`).
+  - IDE settings & workspaces: Antigravity IDE, Codex, OpenCode (`.antigravity-ide`, `.codex`, `workspace`).
+  - Custom shell environments (`.bashrc`, `.bash_history`).
+- **Container Stops / Crashes / Gateway Recreation**:
+  - The gateway stops and removes containers on idle or config changes using `container.remove(force=True)`. Docker named volumes are **never** deleted by container removal. When recreated, the container mounts the exact same volume data.
+- **Host Reboots / Kernel Crashes / Hardware Resets**:
+  - ext4 metadata journaling guarantees filesystem integrity across unexpected host power events. Docker and the gateway automatically remount the volume on boot.
+
+### 8.2 Automated Backup Service (`workspace-backup.timer`)
+To protect against catastrophic accidental user file deletion (`rm -rf`) or data corruption, an automated backup service runs twice daily:
+- **Service & Timer**: `workspace-backup.service` / `workspace-backup.timer`
+- **Schedule**: Daily at `03:00 UTC` and `15:00 UTC` (12-hour RPO).
+- **Script**: `/usr/local/bin/backup-user-workspaces.sh`
+- **Backup Directory**: `/home/ubuntu/Backups/user-workspaces/`
+- **Compression**: Zstandard (`zstd -T0 -3`) creating `<user>_<timestamp>.tar.zst`.
+- **Exclusions**: Heavy re-installable application binaries (`proot-apps`, ~16 GB) and temporary caches (`.cache`) are excluded to preserve host disk space while capturing 100% of user data.
+- **Retention**: Daily rotated snapshots retained for 7 days.
+- **Latest Symlink**: `<user>_latest.tar.zst` always points to the most recent backup.
+
+### 8.3 1-Click Workspace Restore
+To restore a user workspace from a backup:
+```bash
+# Restore most recent backup:
+sudo /usr/local/bin/restore-user-workspace.sh <rohan|sadik|admin|soham>
+
+# Or restore a specific point-in-time snapshot:
+sudo /usr/local/bin/restore-user-workspace.sh rohan /home/ubuntu/Backups/user-workspaces/rohan_20261121_182827.tar.zst
+```
+The script safely:
+1. Stops the container `ff-<username>` if running.
+2. Extracts the archive into `/var/lib/docker/volumes/ff-<username>-config/_data`.
+3. Re-applies proper permissions (`UID 1000: GID 1000`).
+4. Restarts the container.
+
+### 8.4 Firefox Session & Tab Persistence
+All user Firefox profiles are managed via Enterprise Policy (`/usr/lib/firefox/distribution/policies.json`):
+- `"ResumePreviousSession": true`
+- `"StartPage": "previous-session"`
+- `"browser.startup.page": 3`
+- `"browser.sessionstore.resume_from_crash": true`
+Whenever Firefox is reopened after a container restart, crash, or gateway idle sleep, all open tabs and windows are automatically restored.
+

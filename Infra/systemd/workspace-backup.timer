@@ -1,0 +1,11 @@
+[Unit]
+Description=Trigger Automated Backup of User Workspaces twice daily
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+OnCalendar=*-*-* 15:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

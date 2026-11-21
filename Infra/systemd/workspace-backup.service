@@ -1,0 +1,13 @@
+[Unit]
+Description=Automated Daily/Bi-Daily Backup of User Workspaces (Selkies/Firefox/Mail/IDE)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup-user-workspaces.sh
+Nice=15
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target
