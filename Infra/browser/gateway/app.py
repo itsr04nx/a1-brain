@@ -2989,6 +2989,48 @@ def set_network_policy(user: str, actor: str, adult_exempt: bool, safe_search_ex
     return {"ok": True, "adult_exempt": adult_exempt, "safe_search_exempt": safe_search_exempt, "policy": policy, "adguard": adguard}
 
 
+def adguard_filtering() -> dict:
+    """Read the global safe-search / parental switches from AdGuard Home."""
+    if not (ADGUARD_USER and ADGUARD_PASS):
+        return {"ok": False, "reason": "adguard credentials not configured"}
+    base = "http://172.30.0.5:3000"
+    auth = (ADGUARD_USER, ADGUARD_PASS)
+    try:
+        with httpx.Client(timeout=6.0) as client:
+            safe = client.get(f"{base}/control/safesearch/status", auth=auth)
+            parental = client.get(f"{base}/control/parental/status", auth=auth)
+        return {"ok": True, "safe_search": safe.json(), "parental": parental.json()}
+    except Exception as exc:
+        return {"ok": False, "reason": str(exc)}
+
+
+@app.get("/admin/offboarding/api/filtering")
+async def offboarding_filtering(request: Request):
+    require_admin(request)
+    return {"ok": True, "filtering": await asyncio.to_thread(adguard_filtering)}
+
+
+@app.post("/admin/offboarding/api/filtering")
+async def offboarding_filtering_set(payload: dict, request: Request):
+    actor = require_admin(request)
+    enabled = bool(payload.get("safe_search"))
+
+    def apply() -> dict:
+        base = "http://172.30.0.5:3000"
+        auth = (ADGUARD_USER, ADGUARD_PASS)
+        # AdGuard exposes two body-less endpoints; the request body is ignored,
+        # so POSTing to /enable always turns it on.
+        action = "enable" if enabled else "disable"
+        with httpx.Client(timeout=8.0) as client:
+            response = client.post(f"{base}/control/safesearch/{action}", auth=auth)
+            response.raise_for_status()
+        return adguard_filtering()
+
+    result = await asyncio.to_thread(apply)
+    _audit(actor, "*", "global_safe_search", f"enabled={enabled}")
+    return {"ok": True, "safe_search": enabled, "filtering": result}
+
+
 @app.get("/admin/offboarding", response_class=HTMLResponse)
 async def offboarding_page(request: Request):
     try:
@@ -3029,6 +3071,7 @@ async def offboarding_state(request: Request):
     return {
         "ok": True,
         "users": users,
+        "filtering": await asyncio.to_thread(adguard_filtering),
         "reconcile": reconcile_report(),
         "audit": [dict(row) for row in query("SELECT * FROM offboarding_audit ORDER BY id DESC LIMIT 100")],
     }
@@ -3134,6 +3177,7 @@ OFFBOARDING_HTML = r"""<!doctype html>
   .list { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:.7rem .8rem; }
   .list b { font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
   .list div { font-family:ui-monospace,monospace; font-size:.8rem; margin-top:.25rem; }
+  .filterbar { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:.85rem 1rem; }
   #err { color:var(--bad); margin-top:.8rem; }
 </style>
 </head>
@@ -3146,6 +3190,12 @@ OFFBOARDING_HTML = r"""<!doctype html>
   <p class="hint">Disable stops the workspace, blocks SSO at the gateway, clears the stored Authelia cookie and quarantines the IP. Files, volumes and mail are retained. Encrypted export and permanent purge are Phase 2.</p>
   <div id="err"></div>
   <section class="cards" id="summary"></section>
+
+  <h2>Global filtering</h2>
+  <div class="filterbar">
+    <label><input type="checkbox" id="globalSafeSearch" onchange="setGlobalSafeSearch(this.checked)"> <b>Safe search</b> for all users</label>
+    <span class="muted">Per-user <b>Safe search</b> below exempts that one user from this global switch. The same switch also lives in AdGuard Home under <b>Settings &rarr; General</b>; per-client overrides under <b>Settings &rarr; Clients</b>.</span>
+  </div>
 
   <h2>Users</h2>
   <table>
@@ -3199,6 +3249,10 @@ function render() {
     ['Users', counts.total], ['Active', counts.active], ['Disabled', counts.disabled], ['Orphans', counts.orphans]
   ].map(([label, value]) => '<div class="card"><span>' + label + '</span><b>' + value + '</b></div>').join('');
 
+  const globalSafe = (DATA.filtering && DATA.filtering.safe_search) || {};
+  const globalBox = document.getElementById('globalSafeSearch');
+  if (globalBox) globalBox.checked = !!globalSafe.enabled;
+
   document.getElementById('users').innerHTML = users.map((u) => {
     const disabled = u.state === 'disabled';
     const containerClass = u.container === 'running' ? 'running' : (u.container === 'absent' ? 'absent' : '');
@@ -3237,6 +3291,11 @@ async function act(user, mode) {
   if (reason === null) return;
   if (!confirm(mode.toUpperCase() + ' ' + user + '? This is reversible for disable; data is retained.')) return;
   try { await api('/user/' + encodeURIComponent(user), { method: 'POST', body: JSON.stringify({ mode: mode, reason: reason }) }); await load(); }
+  catch (e) { document.getElementById('err').textContent = e.message; }
+}
+
+async function setGlobalSafeSearch(enabled) {
+  try { await api('/filtering', { method: 'POST', body: JSON.stringify({ safe_search: enabled }) }); await load(); }
   catch (e) { document.getElementById('err').textContent = e.message; }
 }
 

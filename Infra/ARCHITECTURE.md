@@ -260,9 +260,16 @@ against an address lets the next user inherit them.
   `http_access deny blocked_adult !adult_exempt`. Never hardcode an IP in `squid.conf`.
 - `sync_adguard_clients()` keeps AdGuard clients aligned with the same username→IP map and
   deletes the client of a disabled user. Per-user **safe-search exemption** maps to
-  `use_global_settings=false` for that client; the **global** safe-search switch remains in
-  the AdGuard UI at `https://firewall.rohan.run.place/` → *Settings → General* (global) and
-  *Settings → Clients* (per client).
+  `use_global_settings=false` for that client.
+- **Global safe search** is a single switch for everyone. It is exposed as the *Global
+  filtering → Safe search* checkbox at the top of the admin page
+  (`GET/POST /admin/offboarding/api/filtering`), and it is the same setting as AdGuard
+  Home → *Settings → General → Safe search*. Per-client overrides remain under
+  *Settings → Clients*.
+- AdGuard's API has **two body-less endpoints**: `POST /control/safesearch/enable` and
+  `POST /control/safesearch/disable`. The request body is ignored, so posting
+  `{"enabled": false}` to `/enable` still **enables** it. Always choose the endpoint by the
+  desired state.
 - `sync_lldap_groups()` no longer re-grants a hardcoded admin list on every call, which
   previously survived user deletion and could re-create orphan memberships.
 
