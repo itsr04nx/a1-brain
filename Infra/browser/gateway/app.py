@@ -485,7 +485,7 @@ def write_policies(user: str) -> str:
             },
             "DNSOverHTTPS": {"Enabled": False, "Locked": True},
             "Homepage": {
-                "URL": "http://browser-gateway:8080/portal",
+                "URL": "https://auth.rohan.run.place/",
                 "StartPage": "homepage",
                 "Locked": True,
             },
@@ -521,7 +521,7 @@ def write_policies(user: str) -> str:
                 "browser.fixup.dns_first_for_single_words": {"Value": True, "Status": "locked"},
                 "security.enterprise_roots.enabled": {"Value": True, "Status": "locked"},
                 "browser.startup.homepage": {
-                    "Value": "http://browser-gateway:8080/portal",
+                    "Value": "https://auth.rohan.run.place/",
                     "Status": "locked",
                 },
                 "browser.newtabpage.enabled": {"Value": False, "Status": "locked"},
