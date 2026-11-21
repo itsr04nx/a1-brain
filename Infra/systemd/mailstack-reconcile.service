@@ -1,0 +1,7 @@
+[Unit]
+Description=Reconcile mail/SSO stack
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mailstack-reconcile.sh

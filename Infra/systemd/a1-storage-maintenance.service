@@ -1,0 +1,8 @@
+[Unit]
+Description=Weekly A1 storage maintenance (Docker/apt/journal/tmp)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/a1-storage-maintenance.sh
+Nice=10
+IOSchedulingClass=idle

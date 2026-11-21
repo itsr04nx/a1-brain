@@ -1,0 +1,4 @@
+#!/bin/sh
+# The only action the micro-1 resume key is allowed to perform.
+# Invoked by sshd as a forced command; the client cannot pass arguments.
+exec /usr/local/bin/a1-openhands-run >/dev/null 2>&1

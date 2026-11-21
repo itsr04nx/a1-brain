@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""
+Rohan Homelab - Automated User Onboarding & Welcome Mailer
+Monitors LLDAP for newly provisioned users, initializes mailbox storage,
+and delivers a welcome email payload from onboarding@rohan.run.place.
+"""
+
+import sys
+import os
+import time
+import json
+import sqlite3
+import smtplib
+import subprocess
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+LLDAP_DB = "/home/ubuntu/Workspace/authelia/data/lldap/users.db"
+SNAPPYMAIL_STORAGE = "/home/ubuntu/Workspace/authelia/data/snappymail/_data_/_default_/storage/rohan.run.place"
+STATE_DIR = "/home/ubuntu/Workspace/authelia/data/onboarding"
+STATE_FILE = os.path.join(STATE_DIR, "welcomed_users.json")
+SMTP_HOST = "127.0.0.1"
+SMTP_PORT = 465
+SMTP_USER = "admin@rohan.run.place"
+SMTP_PASS = "admin12345"
+SENDER = "Rohan Homelab <onboarding@rohan.run.place>"
+BASE_DOMAIN = "rohan.run.place"
+
+
+def get_welcomed_users():
+    os.makedirs(STATE_DIR, exist_ok=True)
+    if os.path.exists(STATE_FILE):
+        try:
+            with open(STATE_FILE, "r") as f:
+                return set(json.load(f))
+        except Exception:
+            return set()
+    return set()
+
+
+def save_welcomed_user(username):
+    users = get_welcomed_users()
+    users.add(username)
+    os.makedirs(STATE_DIR, exist_ok=True)
+    with open(STATE_FILE, "w") as f:
+        json.dump(sorted(list(users)), f, indent=2)
+
+
+def render_html(username, display_name, email):
+    first_name = display_name.split()[0] if display_name else username
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to Rohan Homelab</title>
+</head>
+<body style="margin:0;padding:0;background-color:#1e2124;font-family:Roboto,-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;color:#ffffff;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#1e2124;padding:30px 15px;">
+    <tr>
+      <td align="center">
+        <!-- Main Container -->
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width:540px;background-color:#25282c;border:1px solid #363a3f;border-radius:6px;overflow:hidden;">
+          
+          <!-- Header with Avatar -->
+          <tr>
+            <td align="center" style="padding:36px 30px 20px 30px;">
+              <table border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td align="center" style="width:56px;height:56px;border-radius:50%;border:2px solid #ffffff;text-align:center;">
+                    <div style="font-size:26px;line-height:52px;color:#ffffff;">&#128100;</div>
+                  </td>
+                </tr>
+              </table>
+              <h1 style="margin:16px 0 6px 0;font-size:22px;font-weight:400;color:#ffffff;letter-spacing:-0.01em;">Welcome, {first_name}</h1>
+              <p style="margin:0;font-size:14px;color:#a6aab0;line-height:1.4;">Your Rohan Homelab identity account is ready</p>
+            </td>
+          </tr>
+
+          <!-- Account Summary Pill -->
+          <tr>
+            <td style="padding:0 30px 24px 30px;">
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color:#2c3035;border:1px solid #3d4248;border-radius:4px;padding:12px 16px;">
+                <tr>
+                  <td style="font-size:13px;color:#a6aab0;padding:4px 0;">Username:</td>
+                  <td align="right" style="font-size:13px;font-family:monospace;color:#2196f3;font-weight:bold;padding:4px 0;">{username}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:13px;color:#a6aab0;padding:4px 0;">Primary Email:</td>
+                  <td align="right" style="font-size:13px;font-family:monospace;color:#ffffff;padding:4px 0;">{email}</td>
+                </tr>
+                <tr>
+                  <td style="font-size:13px;color:#a6aab0;padding:4px 0;">Single Sign-On:</td>
+                  <td align="right" style="font-size:13px;color:#4caf50;font-weight:500;padding:4px 0;">Active</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Section: How Things Work Here -->
+          <tr>
+            <td style="padding:0 30px 20px 30px;">
+              <h2 style="margin:0 0 8px 0;font-size:15px;font-weight:500;color:#ffffff;text-transform:uppercase;letter-spacing:0.04em;">1. Unified Single Sign-On (SSO)</h2>
+              <p style="margin:0 0 12px 0;font-size:13px;color:#b0b3b8;line-height:1.5;">
+                You use <strong>one single password</strong> across every service in this homelab. When you log in at the central portal (<a href="https://auth.{BASE_DOMAIN}" style="color:#2196f3;text-decoration:none;">auth.{BASE_DOMAIN}</a>), you are seamlessly authenticated into all authorized web applications.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Section: Self-Service Portal & Password -->
+          <tr>
+            <td style="padding:0 30px 20px 30px;">
+              <h2 style="margin:0 0 8px 0;font-size:15px;font-weight:500;color:#ffffff;text-transform:uppercase;letter-spacing:0.04em;">2. Self-Service Portal &amp; Password Changes</h2>
+              <p style="margin:0 0 10px 0;font-size:13px;color:#b0b3b8;line-height:1.5;">
+                You can manage your account and update your password anytime:
+              </p>
+              <ul style="margin:0 0 12px 0;padding-left:18px;font-size:13px;color:#b0b3b8;line-height:1.6;">
+                <li><strong>Directory Portal:</strong> Visit <a href="https://user.{BASE_DOMAIN}" style="color:#2196f3;text-decoration:none;">user.{BASE_DOMAIN}</a> to view your profile, manage active sessions, or change your password.</li>
+                <li><strong>Password Reset:</strong> If you forget your password, click the <em>"Reset password?"</em> link on the SSO sign-in page to receive a recovery token.</li>
+              </ul>
+            </td>
+          </tr>
+
+          <!-- Section: Requesting Access -->
+          <tr>
+            <td style="padding:0 30px 20px 30px;">
+              <h2 style="margin:0 0 8px 0;font-size:15px;font-weight:500;color:#ffffff;text-transform:uppercase;letter-spacing:0.04em;">3. Requesting Application Access</h2>
+              <p style="margin:0 0 12px 0;font-size:13px;color:#b0b3b8;line-height:1.5;">
+                Access to services is managed via role-based LDAP groups. If you encounter an <strong>"Access Denied (403)"</strong> error on any service:
+              </p>
+              <div style="background-color:#2c3035;border-left:3px solid #2196f3;padding:10px 14px;border-radius:0 4px 4px 0;font-size:13px;color:#a6aab0;line-height:1.4;">
+                Simply email <a href="mailto:admin@{BASE_DOMAIN}?subject=Access%20Request%20for%20{username}" style="color:#2196f3;text-decoration:none;">admin@{BASE_DOMAIN}</a> with the applications you need (e.g. <em>OpenCode</em>, <em>OpenHands</em>, <em>Cockpit</em>, <em>Webmail</em>), and the administrator will assign the appropriate group.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Section: Email & Thunderbird -->
+          <tr>
+            <td style="padding:0 30px 24px 30px;">
+              <h2 style="margin:0 0 8px 0;font-size:15px;font-weight:500;color:#ffffff;text-transform:uppercase;letter-spacing:0.04em;">4. Email Access (Webmail &amp; Thunderbird)</h2>
+              <p style="margin:0 0 10px 0;font-size:13px;color:#b0b3b8;line-height:1.5;">
+                Your homelab email address is active and ready:
+              </p>
+              <ul style="margin:0 0 16px 0;padding-left:18px;font-size:13px;color:#b0b3b8;line-height:1.6;">
+                <li><strong>Webmail:</strong> Open <a href="https://mail.{BASE_DOMAIN}" style="color:#2196f3;text-decoration:none;">mail.{BASE_DOMAIN}</a> directly in your browser.</li>
+                <li><strong>Thunderbird &amp; Mobile:</strong> Add an account in Mozilla Thunderbird or your phone's mail app by typing <code>{email}</code> and your SSO password. All server settings will auto-configure instantly over the public internet.</li>
+              </ul>
+
+              <!-- Action Buttons -->
+              <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:16px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://auth.{BASE_DOMAIN}" style="display:inline-block;background-color:#1976d2;color:#ffffff;font-size:13px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;text-decoration:none;padding:10px 20px;border-radius:4px;margin:4px;">Sign In to SSO</a>
+                    <a href="https://mail.{BASE_DOMAIN}" style="display:inline-block;background-color:#363a3f;color:#ffffff;font-size:13px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;text-decoration:none;padding:10px 20px;border-radius:4px;margin:4px;">Open Webmail</a>
+                    <a href="https://user.{BASE_DOMAIN}" style="display:inline-block;background-color:#363a3f;color:#ffffff;font-size:13px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;text-decoration:none;padding:10px 20px;border-radius:4px;margin:4px;">Directory Portal</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#202326;border-top:1px solid #363a3f;padding:18px 30px;text-align:center;">
+              <p style="margin:0 0 4px 0;font-size:12px;color:#6c7278;">
+                Rohan Homelab Identity &bull; Automated Onboarding Service
+              </p>
+              <p style="margin:0;font-size:12px;color:#6c7278;">
+                Need help? Contact <a href="mailto:admin@{BASE_DOMAIN}" style="color:#8c9096;text-decoration:underline;">admin@{BASE_DOMAIN}</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+
+def ensure_snappymail_storage(username):
+    user_storage = os.path.join(SNAPPYMAIL_STORAGE, username, ".sessions")
+    try:
+        os.makedirs(user_storage, exist_ok=True)
+        # Apply 82:82 and 770
+        subprocess.run(["chown", "-R", "82:82", os.path.join(SNAPPYMAIL_STORAGE, username)], check=False)
+        subprocess.run(["chmod", "-R", "770", os.path.join(SNAPPYMAIL_STORAGE, username)], check=False)
+    except Exception as e:
+        print(f"[!] Warning: Unable to pre-create SnappyMail storage for {username}: {e}", file=sys.stderr)
+
+
+def send_welcome_email(username, display_name, email):
+    ensure_snappymail_storage(username)
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"Welcome to Rohan Homelab, {display_name or username}"
+    msg["From"] = SENDER
+    msg["To"] = email
+
+    html_content = render_html(username, display_name, email)
+    msg.attach(MIMEText(html_content, "html", "utf-8"))
+
+    with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+        server.login(SMTP_USER, SMTP_PASS)
+        server.sendmail("onboarding@rohan.run.place", [email], msg.as_string())
+
+    save_welcomed_user(username)
+    print(f"[✓] Successfully delivered welcome email to {username} ({email}) from {SENDER}")
+
+
+def get_all_users():
+    if not os.path.exists(LLDAP_DB):
+        print(f"[!] Error: LLDAP database not found at {LLDAP_DB}", file=sys.stderr)
+        return []
+    try:
+        conn = sqlite3.connect(LLDAP_DB)
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, email, display_name FROM users")
+        rows = cursor.fetchall()
+        conn.close()
+        return [{"user_id": r[0], "email": r[1], "display_name": r[2]} for r in rows]
+    except Exception as e:
+        print(f"[!] Database read error: {e}", file=sys.stderr)
+        return []
+
+
+def run_once():
+    try:
+        subprocess.run(["/usr/local/bin/homelab-sync-avatars"], check=False)
+    except Exception:
+        pass
+    users = get_all_users()
+    welcomed = get_welcomed_users()
+    new_users = [u for u in users if u["user_id"] not in welcomed]
+
+    for u in new_users:
+        # Ignore system accounts if any
+        if u["user_id"] in ["onboarding"]:
+            save_welcomed_user(u["user_id"])
+            continue
+        try:
+            print(f"[*] New user detected: {u['user_id']} ({u['email']}). Sending welcome email...")
+            send_welcome_email(u["user_id"], u["display_name"], u["email"])
+        except Exception as e:
+            print(f"[!] Failed to onboard user {u['user_id']}: {e}", file=sys.stderr)
+
+
+def daemon_loop():
+    print("[*] Rohan Homelab Onboarding Watcher Daemon started. Monitoring for new users...")
+    while True:
+        try:
+            run_once()
+        except Exception as e:
+            print(f"[!] Daemon error: {e}", file=sys.stderr)
+        time.sleep(10)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        arg = sys.argv[1]
+        if arg == "--daemon":
+            daemon_loop()
+        elif arg == "--check-all":
+            run_once()
+        else:
+            # Send to specific username
+            username = arg
+            users = get_all_users()
+            target = next((u for u in users if u["user_id"].lower() == username.lower()), None)
+            if not target:
+                print(f"[!] User '{username}' not found in LLDAP database.", file=sys.stderr)
+                sys.exit(1)
+            send_welcome_email(target["user_id"], target["display_name"], target["email"])
+    else:
+        run_once()

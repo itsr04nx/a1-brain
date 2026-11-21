@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Homelab Avatar Synchronizer: LLDAP -> SnappyMail & Nginx
+python3 - << "PYEOF"
+import sqlite3, os, hashlib
+
+db_path = "/home/ubuntu/Workspace/authelia/data/lldap/users.db"
+snappy_dir = "/home/ubuntu/Workspace/authelia/data/snappymail/_data_/_default_/avatars"
+nginx_dir = "/home/ubuntu/Workspace/authelia/nginx/avatars"
+
+if not os.path.exists(db_path):
+    exit(0)
+
+os.makedirs(snappy_dir, exist_ok=True)
+os.makedirs(nginx_dir, exist_ok=True)
+
+conn = sqlite3.connect(db_path)
+c = conn.cursor()
+
+c.execute("""
+    SELECT u.user_id, u.email, a.user_attribute_value
+    FROM users u
+    JOIN user_attributes a ON u.user_id = a.user_attribute_user_id
+    WHERE a.user_attribute_name = "avatar"
+""")
+
+for uid, email, val in c.fetchall():
+    idx = val.find(b"\xff\xd8\xff")
+    if idx != -1:
+        img_data = val[idx:]
+        email_clean = email.lower().strip()
+        sha1_email = hashlib.sha1(email_clean.encode()).hexdigest()
+        
+        # Write SnappyMail avatars
+        for s_name in [f"{email_clean}.jpeg", f"{sha1_email}.jpeg", f"{uid}.jpeg"]:
+            sp = os.path.join(snappy_dir, s_name)
+            with open(sp, "wb") as f:
+                f.write(img_data)
+            try:
+                os.chown(sp, 82, 82)
+                os.chmod(sp, 0o660)
+            except Exception:
+                pass
+
+        # Write Nginx public avatars
+        for n_name in [uid, f"{uid}.jpg", f"{uid}.jpeg", email_clean, f"{email_clean}.jpg", sha1_email, f"{sha1_email}.jpg"]:
+            np = os.path.join(nginx_dir, n_name)
+            with open(np, "wb") as f:
+                f.write(img_data)
+            try:
+                os.chmod(np, 0o644)
+            except Exception:
+                pass
+
+conn.close()
+PYEOF

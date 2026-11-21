@@ -54,6 +54,7 @@ services:
   browser-gateway:
     build: ./gateway
     container_name: browser-gateway
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
     restart: unless-stopped
     environment:
       AUTHELIA_URL: http://authelia:9091

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<clientConfig version="1.1">
+  <emailProvider id="rohan.run.place">
+    <domain>rohan.run.place</domain>
+    <displayName>Rohan Homelab Mail</displayName>
+    <displayShortName>Homelab</displayShortName>
+
+    <!-- Incoming IMAP (SSL/TLS) -->
+    <incomingServer type="imap">
+      <hostname>mail.rohan.run.place</hostname>
+      <port>993</port>
+      <socketType>SSL</socketType>
+      <username>%EMAILADDRESS%</username>
+      <authentication>password-cleartext</authentication>
+    </incomingServer>
+
+    <!-- Outgoing SMTP (SSL/TLS) -->
+    <outgoingServer type="smtp">
+      <hostname>mail.rohan.run.place</hostname>
+      <port>465</port>
+      <socketType>SSL</socketType>
+      <username>%EMAILADDRESS%</username>
+      <authentication>password-cleartext</authentication>
+    </outgoingServer>
+
+    <!-- Outgoing SMTP Alternative (STARTTLS) -->
+    <outgoingServer type="smtp">
+      <hostname>mail.rohan.run.place</hostname>
+      <port>587</port>
+      <socketType>STARTTLS</socketType>
+      <username>%EMAILADDRESS%</username>
+      <authentication>password-cleartext</authentication>
+    </outgoingServer>
+
+    <enable visiturl="https://webmail.rohan.run.place/">
+      <instruction>You can also access your mailbox via the Webmail portal</instruction>
+    </enable>
+  </emailProvider>
+</clientConfig>

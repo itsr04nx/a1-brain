@@ -1,0 +1,289 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# a1-session - pause/resume the OpenHands canvas on the A1, and power the host
+# down when it is genuinely idle.
+#
+# Runs on the A1. Installed as /usr/local/bin/a1-session.
+#
+# Two levels of "off":
+#   pause    stop the openhands-app container. Host stays up, tailnet stays
+#            up, resume takes ~10s. Safe to automate.
+#   poweroff shutdown the instance. Real resource saving, but the ephemeral
+#            public IPv4 is released and only the OCI CLI (your laptop) can
+#            start it again. Never automated unless you explicitly ask.
+#
+# Config: /etc/a1-session.conf   (MODE=pause|poweroff, IDLE_MINUTES=..)
+# ---------------------------------------------------------------------------
+set -uo pipefail
+
+APP=openhands-app
+CONF=/etc/a1-session.conf
+STATE_DIR=/var/lib/a1-session
+IDLE_FILE=$STATE_DIR/idle-since
+LOG=/var/log/a1-session.log
+
+MODE=pause
+IDLE_MINUTES=60
+CPU_BUSY_PCT=2.0
+
+# shellcheck disable=SC1090
+[ -r "$CONF" ] && . "$CONF"
+
+log() { printf '%s %s\n' "$(date -Is)" "$*" >> "$LOG" 2>/dev/null; }
+
+need_root() {
+  [ "$(id -u)" -eq 0 ] && return 0
+  exec sudo -E "$0" "$@"
+}
+
+app_running() { [ "$(docker inspect -f '{{.State.Running}}' "$APP" 2>/dev/null)" = "true" ]; }
+
+cpu_pct() {
+  local raw
+  raw=$(docker stats --no-stream --format '{{.CPUPerc}}' "$APP" 2>/dev/null | tr -d '% ')
+  [ -z "$raw" ] && { echo "0"; return; }
+  printf '%.2f' "$raw" 2>/dev/null || echo "0"
+}
+
+# Every running container that is not the app itself is treated as real work:
+# OpenHands spawns one sandbox container per live conversation.
+other_containers() {
+  docker ps --format '{{.Names}}' 2>/dev/null | grep -vx "$APP" | tr '\n' ' '
+}
+
+is_busy() {
+  local others
+  others=$(other_containers)
+  if [ -n "${others// /}" ]; then
+    BUSY_REASON="sandbox/other container running: $others"
+    return 0
+  fi
+
+  if [ -n "$(who 2>/dev/null | head -1)" ]; then
+    BUSY_REASON="interactive login present"
+    return 0
+  fi
+
+  if app_running; then
+    local max=0 i v
+    for i in 1 2 3; do
+      v=$(cpu_pct)
+      awk -v a="$v" -v b="$max" 'BEGIN{exit !(a>b)}' && max=$v
+      [ "$i" -lt 3 ] && sleep 2
+    done
+    if awk -v a="$max" -v b="$CPU_BUSY_PCT" 'BEGIN{exit !(a>=b)}'; then
+      BUSY_REASON="app cpu ${max}% (>= ${CPU_BUSY_PCT}%)"
+      return 0
+    fi
+    BUSY_REASON="idle (app cpu ${max}%)"
+    return 1
+  fi
+
+  BUSY_REASON="app not running"
+  return 1
+}
+
+wait_http() {
+  local ip deadline code
+  ip=$(tailscale ip -4 2>/dev/null)
+  deadline=$(( $(date +%s) + ${1:-120} ))
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    code=$(curl -s -o /dev/null -m 3 -w '%{http_code}' "http://${ip}:3000/" 2>/dev/null)
+    [ "$code" = "200" ] && return 0
+    sleep 3
+  done
+  return 1
+}
+
+cmd_status() {
+  local ip
+  ip=$(tailscale ip -4 2>/dev/null)
+  echo "host      : $(hostname)  $(. /etc/os-release 2>/dev/null; echo "$PRETTY_NAME")"
+  echo "uptime    : $(uptime -p 2>/dev/null | sed 's/^up //')"
+  echo "load      : $(cut -d' ' -f1-3 /proc/loadavg)"
+  echo "memory    : $(free -h | awk 'NR==2{print $3" used of "$2}')"
+  echo "disk      : $(df -h / | awk 'NR==2{print $3" used of "$2" ("$5")"}')"
+  echo "tailnet   : ${ip:-none}"
+  echo
+  if app_running; then
+    echo "container : $APP RUNNING since $(docker inspect -f '{{.State.StartedAt}}' "$APP" 2>/dev/null)"
+    echo "memory    : $(docker stats --no-stream --format '{{.MemUsage}} ({{.MemPerc}})' "$APP" 2>/dev/null)"
+    echo "cpu       : $(docker stats --no-stream --format '{{.CPUPerc}}' "$APP" 2>/dev/null)"
+  else
+    echo "container : $APP stopped"
+  fi
+  local others
+  others=$(other_containers)
+  echo "sandboxes : ${others:-none}"
+  echo
+  if is_busy; then echo "state     : BUSY  ($BUSY_REASON)"; else echo "state     : IDLE  ($BUSY_REASON)"; fi
+  if [ -f "$IDLE_FILE" ]; then
+    echo "idle for  : $(( ( $(date +%s) - $(cat "$IDLE_FILE") ) / 60 )) min (limit ${IDLE_MINUTES})"
+  else
+    echo "idle for  : 0 min (limit ${IDLE_MINUTES})"
+  fi
+  echo "auto mode : $MODE"
+  echo "auto timer: $(systemctl is-enabled a1-idle.timer 2>/dev/null || true) / $(systemctl is-active a1-idle.timer 2>/dev/null || true)"
+  echo "images    : $(docker system df --format '{{.Type}}: {{.Size}}' 2>/dev/null | tr '\n' '  ')"
+}
+
+cmd_pause() {
+  mkdir -p "$STATE_DIR"
+  if ! app_running; then
+    echo "already paused"
+    exit 0
+  fi
+  log "pause requested"
+  # 60s: the app is a Python/SQLite service and needs time to close cleanly;
+  # a shorter timeout gets it SIGKILLed (exit 137).
+  docker stop -t 60 "$APP" >/dev/null 2>&1
+  # Clear stopped sandbox containers left over from finished conversations.
+  # Note: filter by explicit name - `docker container prune` would delete the
+  # stopped app container itself.
+  local cid cname
+  for cid in $(docker ps -aq --filter status=exited --filter status=created 2>/dev/null); do
+    cname=$(docker inspect -f '{{.Name}}' "$cid" 2>/dev/null | sed 's#^/##')
+    [ "$cname" = "$APP" ] && continue
+    docker rm -f "$cid" >/dev/null 2>&1
+  done
+  if [ "${1:-}" = "--prune" ]; then
+    docker image prune -af --filter "until=168h" >/dev/null 2>&1
+    echo "old images pruned"
+  fi
+  if app_running; then echo "FAILED to stop $APP"; exit 1; fi
+  log "paused"
+  echo "paused: $APP stopped (host still up, resume with: a1-session resume)"
+  echo "reclaimed: $(free -h | awk 'NR==2{print $4" free of "$2}')"
+}
+
+cmd_resume() {
+  rm -f "$IDLE_FILE"
+  if app_running; then
+    echo "already running"
+    wait_http 20 && echo "http ok"
+    exit 0
+  fi
+  log "resume requested"
+  /usr/local/bin/a1-openhands-run >/dev/null 2>&1 || { echo "start failed"; exit 1; }
+  if wait_http 120; then
+    log "resumed"
+    echo "resumed: http://$(tailscale ip -4):3000 -> 200"
+  else
+    echo "started, but HTTP did not come up within 120s - check: docker logs --tail 30 $APP"
+    exit 1
+  fi
+}
+
+cmd_busy() {
+  if is_busy; then echo "busy: $BUSY_REASON"; exit 0; fi
+  echo "idle: $BUSY_REASON"; exit 1
+}
+
+cmd_auto_idle() {
+  local now since mins dry=""
+  [ "${1:-}" = "--dry-run" ] && dry=1
+  now=$(date +%s)
+  mkdir -p "$STATE_DIR"
+
+  if is_busy; then
+    [ -f "$IDLE_FILE" ] && log "busy again: $BUSY_REASON"
+    rm -f "$IDLE_FILE"
+    echo "busy: $BUSY_REASON"
+    exit 0
+  fi
+
+  if [ ! -f "$IDLE_FILE" ]; then
+    echo "$now" > "$IDLE_FILE"
+    log "idle period started ($BUSY_REASON)"
+    echo "idle: started timer (limit ${IDLE_MINUTES}m)"
+    exit 0
+  fi
+
+  since=$(cat "$IDLE_FILE" 2>/dev/null || echo "$now")
+  mins=$(( (now - since) / 60 ))
+  if [ "$mins" -lt "$IDLE_MINUTES" ]; then
+    echo "idle: ${mins}m of ${IDLE_MINUTES}m"
+    exit 0
+  fi
+
+  case "$MODE" in
+    pause)
+      log "idle ${mins}m >= ${IDLE_MINUTES}m -> pause"
+      if [ -n "$dry" ]; then echo "DRY RUN: would pause"; exit 0; fi
+      cmd_pause
+      ;;
+    poweroff)
+      log "idle ${mins}m >= ${IDLE_MINUTES}m -> poweroff"
+      if [ -n "$dry" ]; then echo "DRY RUN: would poweroff"; exit 0; fi
+      rm -f "$IDLE_FILE"
+      /sbin/shutdown -h +1 "a1-session: idle ${mins}m" 2>/dev/null
+      echo "poweroff scheduled in 1 minute (cancel: sudo shutdown -c)"
+      ;;
+    *)
+      echo "unknown MODE=$MODE in $CONF" >&2
+      exit 1
+      ;;
+  esac
+}
+
+cmd_poweroff() {
+  if is_busy; then
+    echo "refusing to power off: $BUSY_REASON" >&2
+    exit 1
+  fi
+  if [ "${1:-}" = "--dry-run" ]; then echo "DRY RUN: would power off"; exit 0; fi
+  rm -f "$IDLE_FILE"
+  log "manual poweroff requested"
+  /sbin/shutdown -h +1 "a1-session: manual poweroff" 2>/dev/null
+  echo "poweroff scheduled in 1 minute (cancel: sudo shutdown -c)"
+}
+
+cmd_set_mode() {
+  local m="${1:-}"
+  case "$m" in
+    pause|poweroff|off) ;;
+    *) echo "usage: a1-session set-mode pause|poweroff|off" >&2; exit 2 ;;
+  esac
+  {
+    echo "# a1-session configuration"
+    echo "MODE=$m"
+    echo "IDLE_MINUTES=${2:-$IDLE_MINUTES}"
+    echo "CPU_BUSY_PCT=$CPU_BUSY_PCT"
+  } > "$CONF"
+  echo "mode=$m idle=${2:-$IDLE_MINUTES}m"
+}
+
+cmd_config() {
+  echo "conf : $CONF"
+  sed 's/^/  /' "$CONF" 2>/dev/null || echo "  (defaults)"
+  echo
+  echo "effective: MODE=$MODE IDLE_MINUTES=$IDLE_MINUTES CPU_BUSY_PCT=$CPU_BUSY_PCT"
+}
+
+usage() {
+  cat <<'EOF'
+a1-session - OpenHands lifecycle on the A1
+
+  status                 what is running, how busy, when it would pause
+  busy                   exit 0 if in use, 1 if idle (for scripts)
+  pause [--prune]        stop openhands-app (host stays up)
+  resume                 start it again and wait for HTTP 200
+  auto-idle [--dry-run]  the timer's entry point (used by a1-idle.timer)
+  poweroff [--dry-run]   shut the host down, refusing if it looks busy
+  set-mode MODE [MIN]    MODE = pause | poweroff | off ; default idle 60m
+  config                 show effective settings
+EOF
+}
+
+case "${1:-}" in
+  status)        need_root "$@"; cmd_status ;;
+  busy)          cmd_busy ;;
+  pause)         need_root "$@"; shift; cmd_pause "${1:-}" ;;
+  resume)        need_root "$@"; cmd_resume ;;
+  auto-idle)     need_root "$@"; shift; cmd_auto_idle "${1:-}" ;;
+  poweroff)      need_root "$@"; shift; cmd_poweroff "${1:-}" ;;
+  set-mode)      need_root "$@"; shift; cmd_set_mode "${1:-}" "${2:-}" ;;
+  config)        cmd_config ;;
+  *)             usage; exit 2 ;;
+esac
+

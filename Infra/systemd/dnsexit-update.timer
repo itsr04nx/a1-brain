@@ -1,0 +1,10 @@
+[Unit]
+Description=Keep DNSExit A records in sync with the public IP
+
+[Timer]
+OnBootSec=45
+OnUnitActiveSec=300
+AccuracySec=30
+
+[Install]
+WantedBy=timers.target

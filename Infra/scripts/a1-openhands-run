@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Idempotent launcher for the OpenHands app container on the A1.
+# Starts it if it exists, recreates it if something removed it.
+# Installed as /usr/local/bin/a1-openhands-run.
+set -uo pipefail
+
+APP=openhands-app
+IMG=docker.openhands.dev/openhands/openhands:1.8
+
+TSIP=$(tailscale ip -4 2>/dev/null)
+if [ -z "$TSIP" ]; then
+  echo "no tailnet ip (is tailscaled up?)" >&2
+  exit 1
+fi
+
+if docker inspect "$APP" >/dev/null 2>&1; then
+  if [ "$(docker inspect -f '{{.State.Running}}' "$APP")" = "true" ]; then
+    exit 0
+  fi
+  # The container exists but may be bound to an old tailnet address.
+  if docker start "$APP" >/dev/null 2>&1; then
+    exit 0
+  fi
+  echo "existing container would not start; recreating" >&2
+  docker rm -f "$APP" >/dev/null 2>&1
+fi
+
+mkdir -p "$HOME/.openhands"
+docker run -d \
+  --name "$APP" \
+  --restart unless-stopped \
+  -p "${TSIP}:3000:3000" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "$HOME/.openhands:/.openhands" \
+  -e LOG_ALL_EVENTS=true \
+  -e AGENT_SERVER_IMAGE_REPOSITORY=ghcr.io/openhands/agent-server \
+  -e AGENT_SERVER_IMAGE_TAG=1.26.0-python \
+  --add-host host.docker.internal:host-gateway \
+  "$IMG" >/dev/null
+echo "created $APP on ${TSIP}:3000"
+

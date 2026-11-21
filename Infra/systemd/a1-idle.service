@@ -1,0 +1,11 @@
+[Unit]
+Description=a1-session idle check
+Documentation=file:/etc/a1-session.conf
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/a1-session auto-idle
+Nice=10
+IOSchedulingClass=idle

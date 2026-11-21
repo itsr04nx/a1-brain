@@ -1,0 +1,15 @@
+[Unit]
+Description=Mail + SSO stack (authelia, lldap, mailserver, snappymail, mailpit)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ubuntu/Workspace/authelia
+ExecStart=/usr/local/bin/mailstack-reconcile.sh
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

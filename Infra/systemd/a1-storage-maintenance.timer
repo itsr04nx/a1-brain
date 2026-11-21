@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly A1 storage maintenance
+
+[Timer]
+OnCalendar=Sun 04:15
+Persistent=true
+RandomizedDelaySec=15m
+
+[Install]
+WantedBy=timers.target

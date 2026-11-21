@@ -2580,11 +2580,10 @@ def _audit(actor: str, target: str, action: str, detail: str = "", result: str =
 def request_identity(request: Request) -> tuple:
     """Resolve the caller without trusting headers from an untrusted peer."""
     source = request.client.host if request.client else ""
+    # uvicorn must not rewrite the peer from X-Forwarded-For (see Dockerfile):
+    # otherwise a public client address arrives here and Remote-User is
+    # rejected.  Trust only loopback, the authelia network, and nginx itself.
     trusted = source in ("127.0.0.1", "::1") or source.startswith("172.18.") or source == NGINX_IP
-    if not trusted and source.startswith("172.30.0."):
-        # nginx and other infrastructure containers share browser-net.  A
-        # browser session must never be allowed to spoof Remote-User.
-        trusted = not bool(query("SELECT 1 FROM sessions WHERE ip = ?", (source,)))
     if trusted:
         header_user = sanitize(request.headers.get("remote-user", "") or "")
         if header_user:
