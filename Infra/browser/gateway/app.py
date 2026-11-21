@@ -648,7 +648,7 @@ def create_container(user: str, ip: str) -> None:
         extra_hosts=all_hosts,
         dns=[GATEWAY_IP, "172.30.0.5"],
         shm_size="1g",
-        mem_limit="4096m",
+        mem_limit="5120m",
         nano_cpus=1_500_000_000,
         pids_limit=4096,
                 restart_policy={"Name": "no"},
@@ -669,7 +669,7 @@ def create_container(user: str, ip: str) -> None:
     log.info("created %s at %s", name, ip)
 
 
-DESIRED_MEM = 4096 * 1024 * 1024
+DESIRED_MEM = 5120 * 1024 * 1024
 DESIRED_NANOCPUS = 1_500_000_000
 
 
