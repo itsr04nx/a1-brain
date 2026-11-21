@@ -205,3 +205,83 @@ To offload agent execution, model tool invocation, testing suites, and sandbox r
   - `~/Desktop/Firefox.desktop`, a double-click desktop icon;
   - `touch ~/.config/panel-reload` so the running panel rescans immediately.
 - Firefox tolerates a stale `.parentlock` after an unclean stop, so Restart reliably brings the browser back.
+
+### 6. User Offboarding & Network Policy (Phase 1)
+
+Deleting a user in LLDAP is **not** an offboarding action. LLDAP deletion only stops new
+password logins; the Authelia session in Redis, the `ff-<user>` container, the
+`ff-<user>-config` volume, the profile, the Squid ACL, the AdGuard client, the mailbox and
+the stored `authelia_cookie` all survive. Offboarding is therefore an explicit,
+admin-driven workflow with a reversible first step.
+
+#### Phase 1 scope (implemented)
+Phase 1 is **Disable / Enable only**. It never deletes user data. Encrypted export and
+permanent purge are Phase 2.
+
+- **Admin page**: `https://auth.rohan.run.place/admin/offboarding`, also reachable from the
+  admin-only **User Administration** card in the MyApps portal. nginx gates the page and
+  `/admin/offboarding/api/` with `auth_request` and forwards `Remote-User` /
+  `Remote-Groups`; the gateway enforces `admins` / `lldap_admin` membership.
+- **Disable** (reversible) does all of the following in one call:
+  1. records the user in the `offboarding` table (`state=disabled`, actor, reason,
+     `retention_days`, `legal_hold`);
+  2. stops `ff-<user>` (unpausing first if needed) but keeps the container and volume;
+  3. clears `sessions.authelia_cookie` and revokes the SSO session;
+  4. quarantines the user's IP in `released_ips` so `allocate_ip()` cannot hand it to
+     another user during the retention window (or indefinitely under legal hold);
+  5. re-renders the IP-based Squid ACLs and removes the user from AdGuard clients;
+  6. writes an `offboarding_audit` row.
+- **Enable** restores `state=active`, clears the IP quarantine and re-renders policy.
+- **Legal hold / retention** are per user: default **30 days**, overridable per user, and
+  `legal_hold=1` pins the IP and blocks future purge indefinitely.
+- **Reconcile report**: every 10 minutes, and on demand at
+  `GET /admin/offboarding/api/reconcile`, the gateway compares LLDAP with `sessions`,
+  `ff-*` containers, `ff-*-config` volumes, `profiles/`, and `squid/users/`. Orphans are
+  reported and logged; nothing is deleted automatically.
+- **Gateway enforcement**: `internal_authz` rejects a disabled or LLDAP-deleted user with
+  `403 Account disabled or removed.` even if Authelia still holds a valid session.
+  `ensure_session()` and the workspace-control API refuse the same users, so a deleted
+  account cannot restart or reach its workspace.
+
+#### Policy is keyed by username, not IP
+Container IPs are recycled. Storing admin bandwidth or adult/safe-search exemptions
+against an address lets the next user inherit them.
+
+- The gateway stores policy in `network_policy` (per username) and `offboarding`
+  (per username), then **renders** the address lists on every change:
+  - `squid/users/admin_ips.txt` — unlimited-bandwidth pool, from live `admins` /
+    `lldap_admin` users;
+  - `squid/users/adult_exempt_ips.txt` — adult-content exception, from
+    `network_policy.adult_exempt`.
+- Disabled and LLDAP-deleted users are excluded from both files, so a released address
+  loses its privileges immediately.
+- `squid.conf` uses `acl admin_users src "/etc/squid/users/admin_ips.txt"` and
+  `acl adult_exempt src "/etc/squid/users/adult_exempt_ips.txt"` with
+  `http_access deny blocked_adult !adult_exempt`. Never hardcode an IP in `squid.conf`.
+- `sync_adguard_clients()` keeps AdGuard clients aligned with the same username→IP map and
+  deletes the client of a disabled user. Per-user **safe-search exemption** maps to
+  `use_global_settings=false` for that client; the **global** safe-search switch remains in
+  the AdGuard UI at `https://firewall.rohan.run.place/` → *Settings → General* (global) and
+  *Settings → Clients* (per client).
+- `sync_lldap_groups()` no longer re-grants a hardcoded admin list on every call, which
+  previously survived user deletion and could re-create orphan memberships.
+
+#### Operational notes
+- Disable is the correct response to a departure. Delete from LLDAP only after the user is
+  disabled and the retention window has passed.
+- `request_identity()` trusts `Remote-User` only from nginx, loopback, `172.18.0.x`, or a
+  non-session `172.30.0.x` peer; a browser session cannot spoof another user.
+- `internal_authz` reads `X-Real-IP` (set by nginx), never client-supplied
+  `X-Forwarded-For`.
+- Backup before changing policy files: each change is small and auditable, and the
+  `offboarding_audit` table is the record of who did what.
+
+#### Phase 2 (planned, not implemented)
+Export → Purge, with explicit approval:
+
+1. `tar` the volume + profile + maildir; `age`-encrypt with the existing `a1-brain` key;
+   upload to a dedicated OCI bucket; record object path and SHA-256.
+2. Purge only after retention expires and no legal hold is set; require two-person
+   approval.
+3. Remove container, volume, profile, Squid `.conf`, AdGuard client, `sessions` row, mail
+   account + maildir, and any orphan group memberships; append a JSONL audit entry.

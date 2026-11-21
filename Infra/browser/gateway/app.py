@@ -58,6 +58,10 @@ GATEWAY_IP = os.getenv("GATEWAY_IP", "172.30.0.4")
 PROFILES_DIR = os.getenv("PROFILES_DIR", "/home/ubuntu/Workspace/browser/profiles")
 SQUID_USERS_DIR = os.getenv("SQUID_USERS_DIR", "/home/ubuntu/Workspace/browser/squid/users")
 DB_PATH = os.getenv("DB_PATH", "/data/gateway.db")
+LLDAP_DB_PATH = os.getenv("LLDAP_DB_PATH", "/lldap_data/users.db")
+ADMIN_IPS_FILE = os.path.join(SQUID_USERS_DIR, "admin_ips.txt")
+ADULT_EXEMPT_IPS_FILE = os.path.join(SQUID_USERS_DIR, "adult_exempt_ips.txt")
+OFFBOARD_DEFAULT_RETENTION_DAYS = int(os.getenv("OFFBOARD_RETENTION_DAYS", "30"))
 IDLE_MINUTES = int(os.getenv("IDLE_MINUTES", "20"))
 ALLOWED_GROUPS = {
     g.strip().lower()
@@ -201,6 +205,40 @@ def init_db() -> None:
                 port       INTEGER,
                 ip         TEXT,
                 created_at INTEGER
+            );
+            CREATE TABLE IF NOT EXISTS offboarding (
+                username       TEXT PRIMARY KEY,
+                state          TEXT NOT NULL DEFAULT 'active',
+                reason         TEXT,
+                actor          TEXT,
+                created_at     INTEGER,
+                updated_at     INTEGER,
+                retention_days INTEGER DEFAULT 30,
+                legal_hold     INTEGER DEFAULT 0,
+                export_uri     TEXT,
+                export_sha256  TEXT,
+                notes          TEXT
+            );
+            CREATE TABLE IF NOT EXISTS released_ips (
+                ip          TEXT PRIMARY KEY,
+                username    TEXT,
+                released_at INTEGER,
+                hold_until  INTEGER
+            );
+            CREATE TABLE IF NOT EXISTS network_policy (
+                username           TEXT PRIMARY KEY,
+                adult_exempt       INTEGER DEFAULT 0,
+                safe_search_exempt INTEGER DEFAULT 0,
+                updated_at         INTEGER
+            );
+            CREATE TABLE IF NOT EXISTS offboarding_audit (
+                id     INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts     INTEGER,
+                actor  TEXT,
+                target TEXT,
+                action TEXT,
+                detail TEXT,
+                result TEXT
             );
             """
         )
@@ -407,6 +445,15 @@ def allocate_ip(user: str) -> str:
             addr = (ep.get("IPv4Address") or "").split("/")[0]
             if addr:
                 used.add(addr)
+    except Exception:
+        pass
+    # Released addresses stay out of the pool for the retention window so a
+    # new user cannot inherit the previous owner's policy.
+    try:
+        now = int(time.time())
+        for row in query("SELECT ip FROM released_ips WHERE hold_until = 0 OR hold_until > ?", (now,)):
+            if row["ip"]:
+                used.add(row["ip"])
     except Exception:
         pass
     row = query("SELECT ip FROM sessions WHERE username = ?", (user,))
@@ -726,6 +773,10 @@ def recreate_container(user: str) -> str:
         ip = allocate_ip(user)
     write_policies(user)
     create_container(user, ip)
+    try:
+        render_policy_ips()
+    except Exception as exc:
+        log.warning("policy render after recreate failed: %s", exc)
     return ip
 
 
@@ -746,6 +797,10 @@ async def wait_healthy(ip: str, timeout: int = 120) -> bool:
 async def ensure_session(user: str, groups: str = "admins,apps-all,ai-dev-core,browser", authelia_cookie: str = "") -> str:
     name = f"ff-{user}"
     async with lock_for(user):
+        if is_disabled(user):
+            raise PermissionError(f"{user} is disabled")
+        if not lldap_user_exists(user):
+            raise PermissionError(f"{user} no longer exists in LLDAP")
         try:
             container = await asyncio.to_thread(dc().containers.get, name)
         except NotFound:
@@ -775,6 +830,7 @@ async def ensure_session(user: str, groups: str = "admins,apps-all,ai-dev-core,b
                 raise RuntimeError("session did not become healthy")
             upsert_session(user, ip, name, groups=groups, authelia_cookie=authelia_cookie)
             await asyncio.to_thread(render_squid_acl, user, ip)
+            await asyncio.to_thread(render_policy_ips)
             return f"{name}:{SELKIES_PORT}"
 
         if running_sessions() >= MAX_SESSIONS:
@@ -787,6 +843,7 @@ async def ensure_session(user: str, groups: str = "admins,apps-all,ai-dev-core,b
             raise RuntimeError("session did not become healthy")
         upsert_session(user, ip, name, groups=groups, authelia_cookie=authelia_cookie)
         await asyncio.to_thread(render_squid_acl, user, ip)
+        await asyncio.to_thread(render_policy_ips)
         return f"{name}:{SELKIES_PORT}"
 
 
@@ -1989,10 +2046,8 @@ def sync_lldap_groups():
                 )
                 existing_groups[kw] = cursor.lastrowid
 
-        admin_users = ["admin", "rohan", "jatin"]
-        for u in admin_users:
-            for gname, gid in existing_groups.items():
-                cursor.execute("INSERT OR IGNORE INTO memberships (user_id, group_id) VALUES (?, ?)", (u, gid))
+        # Do not hardcode privileged users here.  Group membership belongs in
+        # LLDAP; re-granting it on every call survived user deletion.
 
         conn.commit()
         conn.close()
@@ -2008,6 +2063,8 @@ async def lifespan(_: FastAPI):
     sync_lldap_groups()
     _http = httpx.AsyncClient(verify=False, timeout=httpx.Timeout(10.0, connect=5.0))
     reaper_task = asyncio.create_task(reaper())
+    asyncio.create_task(policy_warmup())
+    reconcile_task = asyncio.create_task(reconcile_loop())
 
     dns_handler = DnsHandler()
     loop = asyncio.get_running_loop()
@@ -2463,14 +2520,761 @@ async def api_squid_delete_blocked(domain: str):
 
 
 # --------------------------------------------------------------------------- #
+# user administration: offboarding (phase 1) + network policy
+# --------------------------------------------------------------------------- #
+def lldap_users() -> Optional[set]:
+    try:
+        conn = sqlite3.connect(f"file:{LLDAP_DB_PATH}?mode=ro", uri=True, timeout=5.0)
+        try:
+            return {row[0] for row in conn.execute("SELECT user_id FROM users")}
+        finally:
+            conn.close()
+    except Exception:
+        return None
+
+
+def lldap_user_exists(user: str) -> bool:
+    users = lldap_users()
+    if users is None:
+        return True
+    return user.lower() in {u.lower() for u in users}
+
+
+def is_disabled(user: str) -> bool:
+    try:
+        row = query("SELECT state FROM offboarding WHERE username = ?", (user,))
+    except Exception:
+        return False
+    return bool(row and row[0]["state"] == "disabled")
+
+
+def offboarding_row(user: str) -> dict:
+    row = query("SELECT * FROM offboarding WHERE username = ?", (user,))
+    if row:
+        return dict(row[0])
+    return {
+        "username": user,
+        "state": "active",
+        "reason": "",
+        "actor": "",
+        "created_at": None,
+        "updated_at": None,
+        "retention_days": OFFBOARD_DEFAULT_RETENTION_DAYS,
+        "legal_hold": 0,
+        "export_uri": "",
+        "export_sha256": "",
+        "notes": "",
+    }
+
+
+def _audit(actor: str, target: str, action: str, detail: str = "", result: str = "ok") -> None:
+    try:
+        execute(
+            "INSERT INTO offboarding_audit (ts, actor, target, action, detail, result) VALUES (?, ?, ?, ?, ?, ?)",
+            (int(time.time()), actor, target, action, detail[:2000], result),
+        )
+    except Exception as exc:
+        log.warning("audit write failed: %s", exc)
+
+
+def request_identity(request: Request) -> tuple:
+    """Resolve the caller without trusting headers from an untrusted peer."""
+    source = request.client.host if request.client else ""
+    trusted = source in ("127.0.0.1", "::1") or source.startswith("172.18.") or source == NGINX_IP
+    if not trusted and source.startswith("172.30.0."):
+        # nginx and other infrastructure containers share browser-net.  A
+        # browser session must never be allowed to spoof Remote-User.
+        trusted = not bool(query("SELECT 1 FROM sessions WHERE ip = ?", (source,)))
+    if trusted:
+        header_user = sanitize(request.headers.get("remote-user", "") or "")
+        if header_user:
+            return header_user, (request.headers.get("remote-groups", "") or "")
+    row = query("SELECT username, groups FROM sessions WHERE ip = ?", (source,))
+    if row:
+        return row[0]["username"], row[0]["groups"] or ""
+    return "", ""
+
+
+def _is_admin(user: str, groups: str) -> bool:
+    names = {g.strip().lower() for g in (groups or "").split(",") if g.strip()}
+    if not names and user:
+        row = query("SELECT groups FROM sessions WHERE username = ?", (user,))
+        if row:
+            names = {g.strip().lower() for g in (row[0]["groups"] or "").split(",") if g.strip()}
+    return user == "admin" or bool(names & {"admins", "lldap_admin"})
+
+
+def require_admin(request: Request) -> str:
+    user, groups = request_identity(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="unauthenticated")
+    if not _is_admin(user, groups):
+        raise HTTPException(status_code=403, detail="admins only")
+    return user
+
+
+def _container_state(user: str) -> str:
+    try:
+        container = dc().containers.get(f"ff-{user}")
+        container.reload()
+        return container.status
+    except NotFound:
+        return "absent"
+    except Exception:
+        return "unknown"
+
+
+def _write_if_changed(path: str, body: str) -> bool:
+    try:
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as handle:
+                if handle.read() == body:
+                    return False
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(body)
+        os.chmod(path, 0o644)
+        return True
+    except OSError as exc:
+        log.warning("could not write %s: %s", path, exc)
+        return False
+
+
+def _reconfigure_squid() -> None:
+    try:
+        dc().containers.get(SQUID_CONTAINER).exec_run(["squid", "-k", "reconfigure"])
+    except Exception as exc:
+        log.warning("squid reload failed: %s", exc)
+
+
+def render_policy_ips(reload_squid: bool = True) -> dict:
+    """Regenerate IP-based Squid ACLs from the live username -> IP map.
+
+    Policy is stored per username; the address is only a rendering detail.
+    Users who are disabled or no longer exist in LLDAP are excluded, so a
+    recycled address cannot inherit their admin pool or adult exemption.
+    """
+    lldap = lldap_users()
+    known = {u.lower() for u in lldap} if lldap is not None else None
+    rows = query(
+        """
+        SELECT s.username, s.ip, s.groups,
+               COALESCE(o.state, 'active') AS state,
+               COALESCE(n.adult_exempt, 0) AS adult_exempt
+        FROM sessions s
+        LEFT JOIN offboarding o ON o.username = s.username
+        LEFT JOIN network_policy n ON n.username = s.username
+        """
+    )
+    admin_ips, adult_ips = [], []
+    for row in rows:
+        if (row["state"] or "active") == "disabled" or not row["ip"]:
+            continue
+        if known is not None and row["username"].lower() not in known:
+            continue
+        groups = {g.strip().lower() for g in (row["groups"] or "").split(",") if g.strip()}
+        if row["username"] == "admin" or groups & {"admins", "lldap_admin"}:
+            admin_ips.append(row["ip"])
+        if row["adult_exempt"]:
+            adult_ips.append(row["ip"])
+
+    admin_ips = sorted(set(admin_ips))
+    adult_ips = sorted(set(adult_ips))
+    changed = _write_if_changed(ADMIN_IPS_FILE, "\n".join(admin_ips) + ("\n" if admin_ips else ""))
+    changed |= _write_if_changed(ADULT_EXEMPT_IPS_FILE, "\n".join(adult_ips) + ("\n" if adult_ips else ""))
+    if changed and reload_squid:
+        _reconfigure_squid()
+    return {"admin_ips": admin_ips, "adult_exempt_ips": adult_ips, "changed": changed}
+
+
+def sync_adguard_clients() -> dict:
+    """Keep AdGuard clients aligned with the live username -> IP map."""
+    if not (ADGUARD_USER and ADGUARD_PASS):
+        return {"ok": False, "reason": "adguard credentials not configured"}
+    base = "http://172.30.0.5:3000"
+    auth = (ADGUARD_USER, ADGUARD_PASS)
+    result = {"updated": [], "added": [], "removed": [], "errors": []}
+    try:
+        with httpx.Client(timeout=6.0) as client:
+            response = client.get(f"{base}/control/clients", auth=auth)
+            response.raise_for_status()
+            clients = response.json().get("clients", [])
+    except Exception as exc:
+        return {"ok": False, "reason": str(exc)}
+
+    by_name = {c.get("name"): c for c in clients if c.get("name")}
+    lldap = lldap_users()
+    known = {u.lower() for u in lldap} if lldap is not None else None
+    rows = query(
+        """
+        SELECT s.username, s.ip, s.display_name,
+               COALESCE(o.state, 'active') AS state,
+               COALESCE(n.safe_search_exempt, 0) AS safe_search_exempt
+        FROM sessions s
+        LEFT JOIN offboarding o ON o.username = s.username
+        LEFT JOIN network_policy n ON n.username = s.username
+        """
+    )
+    active_ips = set()
+    try:
+        with httpx.Client(timeout=6.0) as client:
+            for row in rows:
+                user = row["username"]
+                if (row["state"] or "active") == "disabled" or not row["ip"]:
+                    continue
+                if known is not None and user.lower() not in known:
+                    continue
+                ip = row["ip"]
+                active_ips.add(ip)
+                name = f"{row['display_name'] or user.title()} Browser"
+                existing = by_name.get(name)
+                if existing is None:
+                    for candidate in clients:
+                        if ip in (candidate.get("ids") or []):
+                            existing = candidate
+                            name = candidate.get("name") or name
+                            break
+                body = {
+                    "name": name,
+                    "ids": [ip],
+                    "use_global_settings": not bool(row["safe_search_exempt"]),
+                    "filtering_enabled": True,
+                    "parental_enabled": False,
+                    "safebrowsing_enabled": True,
+                    "safe_search": {
+                        "enabled": False, "bing": False, "duckduckgo": False,
+                        "ecosia": False, "google": False, "pixabay": False,
+                        "yandex": False, "youtube": False,
+                    },
+                    "blocked_services": [],
+                    "use_global_blocked_services": True,
+                    "tags": (existing or {}).get("tags") or [],
+                }
+                try:
+                    if existing is None:
+                        client.post(f"{base}/control/clients/add", auth=auth, json=body)
+                        result["added"].append(name)
+                    else:
+                        client.post(f"{base}/control/clients/update", auth=auth, json={"name": name, "data": body})
+                        result["updated"].append(name)
+                except Exception as exc:
+                    result["errors"].append(f"{name}: {exc}")
+
+            disabled = {
+                row["username"].lower()
+                for row in query("SELECT username FROM offboarding WHERE state = 'disabled'")
+            }
+            for name, candidate in by_name.items():
+                if not name.endswith(" Browser"):
+                    continue
+                ids = candidate.get("ids") or []
+                if not ids or any(ip in active_ips for ip in ids):
+                    continue
+                owner = name[:-len(" Browser")].strip().lower()
+                if owner not in disabled:
+                    continue
+                try:
+                    client.post(f"{base}/control/clients/delete", auth=auth, json={"name": name})
+                    result["removed"].append(name)
+                except Exception as exc:
+                    result["errors"].append(f"delete {name}: {exc}")
+    except Exception as exc:
+        result["errors"].append(str(exc))
+    result["ok"] = not result["errors"]
+    return result
+
+
+async def policy_warmup() -> None:
+    try:
+        await asyncio.to_thread(render_policy_ips)
+        await asyncio.to_thread(sync_adguard_clients)
+    except Exception as exc:
+        log.warning("policy warmup failed: %s", exc)
+
+
+def reconcile_report() -> dict:
+    lldap = lldap_users()
+    known = lldap or set()
+    sessions = {row["username"]: dict(row) for row in query("SELECT * FROM sessions")}
+    offboard = {row["username"]: dict(row) for row in query("SELECT * FROM offboarding")}
+    containers = {}
+    try:
+        for container in dc().containers.list(all=True):
+            if container.name.startswith("ff-"):
+                containers[container.name[3:]] = container.status
+    except Exception:
+        containers = {}
+    volumes = set()
+    try:
+        for volume in dc().volumes.list():
+            if volume.name.startswith("ff-") and volume.name.endswith("-config"):
+                volumes.add(volume.name[3:-len("-config")])
+    except Exception:
+        volumes = set()
+    profiles = set(os.listdir(PROFILES_DIR)) if os.path.isdir(PROFILES_DIR) else set()
+    squid = {
+        name[:-len(".conf")]
+        for name in os.listdir(SQUID_USERS_DIR)
+        if name.endswith(".conf")
+    } if os.path.isdir(SQUID_USERS_DIR) else set()
+
+    def orphan(items):
+        return sorted(item for item in items if item not in known)
+
+    return {
+        "lldap_available": lldap is not None,
+        "lldap_users": sorted(known),
+        "orphans": {
+            "sessions": orphan(sessions),
+            "containers": orphan(containers),
+            "volumes": orphan(volumes),
+            "profiles": orphan(profiles),
+            "squid_acls": orphan(squid),
+        },
+        "without_session": sorted(user for user in known if user not in sessions),
+        "disabled": sorted(user for user, row in offboard.items() if row.get("state") == "disabled"),
+        "released_ips": [dict(row) for row in query("SELECT * FROM released_ips ORDER BY released_at DESC")],
+    }
+
+
+async def reconcile_loop() -> None:
+    while True:
+        try:
+            await asyncio.sleep(600)
+            report = await asyncio.to_thread(reconcile_report)
+            orphans = {key: value for key, value in report.get("orphans", {}).items() if value}
+            if orphans:
+                log.warning("offboarding reconcile: orphans=%s", orphans)
+        except asyncio.CancelledError:
+            return
+        except Exception as exc:
+            log.warning("reconcile error: %s", exc)
+
+
+def _manifest(user: str) -> dict:
+    row = offboarding_row(user)
+    session_rows = query("SELECT username, ip, container, groups, last_seen FROM sessions WHERE username = ?", (user,))
+    session = dict(session_rows[0]) if session_rows else None
+    ip = (session or {}).get("ip")
+    volume = f"ff-{user}-config"
+    try:
+        dc().volumes.get(volume)
+        has_volume = True
+    except Exception:
+        has_volume = False
+    profile_path = os.path.join(PROFILES_DIR, user)
+    squid_path = os.path.join(SQUID_USERS_DIR, f"{user}.conf")
+    quarantine = None
+    if ip:
+        rows = query("SELECT * FROM released_ips WHERE ip = ?", (ip,))
+        quarantine = dict(rows[0]) if rows else None
+    return {
+        "user": user,
+        "state": row["state"],
+        "session": session,
+        "container": {"name": f"ff-{user}", "state": _container_state(user)},
+        "volume": {"name": volume, "exists": has_volume},
+        "profile": {"path": profile_path, "exists": os.path.isdir(profile_path)},
+        "squid_acl": {"path": squid_path, "exists": os.path.exists(squid_path)},
+        "ip_quarantine": quarantine,
+        "retention_days": row["retention_days"],
+        "legal_hold": bool(row["legal_hold"]),
+        "actions": [
+            "stop container",
+            "block SSO at the gateway",
+            "clear the stored Authelia cookie",
+            "quarantine the IP",
+            "scrub Squid and AdGuard policy",
+        ],
+        "note": "Phase 1 keeps all data. Encrypted export and purge are Phase 2.",
+    }
+
+
+def disable_user(user: str, actor: str, reason: str, retention_days: int, legal_hold: bool, dry_run: bool) -> dict:
+    manifest = _manifest(user)
+    if dry_run:
+        return {"ok": True, "dry_run": True, "manifest": manifest}
+    now = int(time.time())
+    execute(
+        """
+        INSERT INTO offboarding (username, state, reason, actor, created_at, updated_at, retention_days, legal_hold)
+        VALUES (?, 'disabled', ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(username) DO UPDATE SET
+            state = 'disabled', reason = excluded.reason, actor = excluded.actor,
+            updated_at = excluded.updated_at, retention_days = excluded.retention_days,
+            legal_hold = excluded.legal_hold
+        """,
+        (user, reason, actor, now, now, retention_days, 1 if legal_hold else 0),
+    )
+    container = workspace_container(user)
+    if container is not None:
+        try:
+            container.reload()
+            if container.status == "paused":
+                container.unpause()
+            if container.status in ("running", "paused"):
+                container.stop(timeout=15)
+        except Exception as exc:
+            log.warning("offboard stop failed for %s: %s", user, exc)
+    session_rows = query("SELECT ip FROM sessions WHERE username = ?", (user,))
+    ip = session_rows[0]["ip"] if session_rows else None
+    if ip:
+        hold_until = 0 if legal_hold else now + max(retention_days, 0) * 86400
+        execute(
+            "INSERT INTO released_ips (ip, username, released_at, hold_until) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(ip) DO UPDATE SET username = excluded.username, released_at = excluded.released_at, hold_until = excluded.hold_until",
+            (ip, user, now, hold_until),
+        )
+    execute("UPDATE sessions SET authelia_cookie = '' WHERE username = ?", (user,))
+    policy = render_policy_ips()
+    adguard = sync_adguard_clients()
+    detail = f"reason={reason!r} retention_days={retention_days} legal_hold={legal_hold} ip={ip} policy={policy} adguard={adguard}"
+    _audit(actor, user, "disable", detail)
+    return {"ok": True, "state": "disabled", "manifest": manifest, "policy": policy, "adguard": adguard}
+
+
+def enable_user(user: str, actor: str, reason: str) -> dict:
+    now = int(time.time())
+    execute(
+        """
+        INSERT INTO offboarding (username, state, reason, actor, created_at, updated_at)
+        VALUES (?, 'active', ?, ?, ?, ?)
+        ON CONFLICT(username) DO UPDATE SET state = 'active', reason = excluded.reason,
+            actor = excluded.actor, updated_at = excluded.updated_at
+        """,
+        (user, reason, actor, now, now),
+    )
+    session_rows = query("SELECT ip FROM sessions WHERE username = ?", (user,))
+    if session_rows and session_rows[0]["ip"]:
+        execute("DELETE FROM released_ips WHERE ip = ?", (session_rows[0]["ip"],))
+    policy = render_policy_ips()
+    adguard = sync_adguard_clients()
+    _audit(actor, user, "enable", f"reason={reason!r} policy={policy}")
+    return {"ok": True, "state": "active", "policy": policy, "adguard": adguard}
+
+
+def set_legal_hold(user: str, actor: str, legal_hold: bool, retention_days: Optional[int] = None) -> dict:
+    row = offboarding_row(user)
+    days = retention_days if retention_days is not None else row["retention_days"]
+    now = int(time.time())
+    execute(
+        """
+        INSERT INTO offboarding (username, state, updated_at, retention_days, legal_hold)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(username) DO UPDATE SET updated_at = excluded.updated_at,
+            retention_days = excluded.retention_days, legal_hold = excluded.legal_hold
+        """,
+        (user, row["state"], now, days, 1 if legal_hold else 0),
+    )
+    session_rows = query("SELECT ip FROM sessions WHERE username = ?", (user,))
+    if session_rows and session_rows[0]["ip"]:
+        hold_until = 0 if legal_hold else now + max(days, 0) * 86400
+        execute("UPDATE released_ips SET hold_until = ? WHERE ip = ?", (hold_until, session_rows[0]["ip"]))
+    _audit(actor, user, "legal_hold", f"legal_hold={legal_hold} retention_days={days}")
+    return {"ok": True, "user": user, "legal_hold": legal_hold, "retention_days": days}
+
+
+def set_network_policy(user: str, actor: str, adult_exempt: bool, safe_search_exempt: bool) -> dict:
+    execute(
+        """
+        INSERT INTO network_policy (username, adult_exempt, safe_search_exempt, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(username) DO UPDATE SET adult_exempt = excluded.adult_exempt,
+            safe_search_exempt = excluded.safe_search_exempt, updated_at = excluded.updated_at
+        """,
+        (user, 1 if adult_exempt else 0, 1 if safe_search_exempt else 0, int(time.time())),
+    )
+    policy = render_policy_ips()
+    adguard = sync_adguard_clients()
+    _audit(actor, user, "network_policy", f"adult_exempt={adult_exempt} safe_search_exempt={safe_search_exempt}")
+    return {"ok": True, "adult_exempt": adult_exempt, "safe_search_exempt": safe_search_exempt, "policy": policy, "adguard": adguard}
+
+
+@app.get("/admin/offboarding", response_class=HTMLResponse)
+async def offboarding_page(request: Request):
+    try:
+        require_admin(request)
+    except HTTPException as exc:
+        return HTMLResponse(
+            f"<h1>{exc.status_code}</h1><p>{html.escape(str(exc.detail))}</p>",
+            status_code=exc.status_code,
+        )
+    return HTMLResponse(OFFBOARDING_HTML)
+
+
+@app.get("/admin/offboarding/api/state")
+async def offboarding_state(request: Request):
+    require_admin(request)
+    rows = query(
+        """
+        SELECT s.username, s.ip, s.groups, s.display_name, s.last_seen,
+               COALESCE(o.state, 'active') AS state,
+               COALESCE(o.retention_days, ?) AS retention_days,
+               COALESCE(o.legal_hold, 0) AS legal_hold,
+               COALESCE(o.reason, '') AS reason,
+               COALESCE(n.adult_exempt, 0) AS adult_exempt,
+               COALESCE(n.safe_search_exempt, 0) AS safe_search_exempt
+        FROM sessions s
+        LEFT JOIN offboarding o ON o.username = s.username
+        LEFT JOIN network_policy n ON n.username = s.username
+        ORDER BY s.username
+        """,
+        (OFFBOARD_DEFAULT_RETENTION_DAYS,),
+    )
+    users = []
+    for row in rows:
+        item = dict(row)
+        item["container"] = _container_state(row["username"])
+        item["in_lldap"] = lldap_user_exists(row["username"])
+        users.append(item)
+    return {
+        "ok": True,
+        "users": users,
+        "reconcile": reconcile_report(),
+        "audit": [dict(row) for row in query("SELECT * FROM offboarding_audit ORDER BY id DESC LIMIT 100")],
+    }
+
+
+@app.get("/admin/offboarding/api/manifest/{user}")
+async def offboarding_manifest(user: str, request: Request):
+    require_admin(request)
+    target = sanitize(user)
+    if not target:
+        raise HTTPException(status_code=400, detail="bad username")
+    return {"ok": True, "manifest": _manifest(target)}
+
+
+@app.post("/admin/offboarding/api/user/{user}")
+async def offboarding_action(user: str, payload: dict, request: Request):
+    actor = require_admin(request)
+    target = sanitize(user)
+    if not target:
+        raise HTTPException(status_code=400, detail="bad username")
+    mode = (payload.get("mode") or "").lower()
+    reason = str(payload.get("reason") or "")[:500]
+    retention = int(payload.get("retention_days") or OFFBOARD_DEFAULT_RETENTION_DAYS)
+    legal_hold = bool(payload.get("legal_hold"))
+    dry_run = bool(payload.get("dry_run"))
+    if mode == "disable":
+        return await asyncio.to_thread(disable_user, target, actor, reason, retention, legal_hold, dry_run)
+    if mode == "enable":
+        return await asyncio.to_thread(enable_user, target, actor, reason)
+    raise HTTPException(status_code=400, detail="mode must be disable or enable (purge is phase 2)")
+
+
+@app.post("/admin/offboarding/api/user/{user}/hold")
+async def offboarding_hold(user: str, payload: dict, request: Request):
+    actor = require_admin(request)
+    target = sanitize(user)
+    if not target:
+        raise HTTPException(status_code=400, detail="bad username")
+    days = payload.get("retention_days")
+    return await asyncio.to_thread(
+        set_legal_hold, target, actor, bool(payload.get("legal_hold")),
+        int(days) if days is not None else None,
+    )
+
+
+@app.post("/admin/offboarding/api/user/{user}/policy")
+async def offboarding_policy(user: str, payload: dict, request: Request):
+    actor = require_admin(request)
+    target = sanitize(user)
+    if not target:
+        raise HTTPException(status_code=400, detail="bad username")
+    return await asyncio.to_thread(
+        set_network_policy, target, actor,
+        bool(payload.get("adult_exempt")),
+        bool(payload.get("safe_search_exempt")),
+    )
+
+
+@app.get("/admin/offboarding/api/reconcile")
+async def offboarding_reconcile(request: Request):
+    require_admin(request)
+    return {"ok": True, "reconcile": await asyncio.to_thread(reconcile_report)}
+
+
+OFFBOARDING_HTML = r"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Administration · Rohan Run Place</title>
+<style>
+  :root { --bg:#0b1220; --panel:#121b2b; --line:#22304a; --text:#e6edf7; --muted:#8ba0bd; --accent:#4f8cff; --ok:#10b981; --warn:#f59e0b; --bad:#ef4444; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.4rem; border-bottom:1px solid var(--line); background:#0e1624; position:sticky; top:0; z-index:2; }
+  header h1 { margin:0; font-size:1.05rem; letter-spacing:.02em; }
+  header a { color:var(--accent); text-decoration:none; font-size:.85rem; }
+  main { max-width:1280px; margin:0 auto; padding:1.4rem; }
+  h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); margin:1.8rem 0 .7rem; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:.7rem; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:.9rem 1rem; }
+  .card b { display:block; font-size:1.4rem; margin-top:.2rem; }
+  .card span { color:var(--muted); font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; }
+  table { width:100%; border-collapse:collapse; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  th, td { padding:.6rem .7rem; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); background:#0f1827; }
+  tr:last-child td { border-bottom:0; }
+  code { background:#0e1522; padding:.1rem .3rem; border-radius:4px; font-family:ui-monospace,monospace; font-size:.8rem; }
+  .badge { display:inline-block; padding:.12rem .5rem; border-radius:999px; font-size:.72rem; border:1px solid var(--line); }
+  .active { color:var(--ok); border-color:#1d4d3d; background:#0d2a22; }
+  .disabled { color:var(--bad); border-color:#5a2630; background:#2a1116; }
+  .absent { color:var(--muted); }
+  .running { color:var(--ok); }
+  button { font:inherit; font-size:.78rem; padding:.35rem .6rem; border-radius:8px; border:1px solid var(--line); background:#1a2434; color:var(--text); cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button.danger { border-color:#5a2630; color:#ffb4bd; }
+  button.ghost { background:transparent; }
+  input[type=number] { width:64px; padding:.3rem .4rem; border-radius:6px; border:1px solid var(--line); background:#0e1522; color:var(--text); }
+  input[type=checkbox] { accent-color:var(--accent); }
+  .muted { color:var(--muted); }
+  .hint { color:var(--muted); font-size:.8rem; margin:.2rem 0 .8rem; }
+  .lists { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.7rem; }
+  .list { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:.7rem .8rem; }
+  .list b { font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .list div { font-family:ui-monospace,monospace; font-size:.8rem; margin-top:.25rem; }
+  #err { color:var(--bad); margin-top:.8rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>User Administration <span class="badge">Phase 1</span></h1>
+  <div><a href="https://auth.rohan.run.place/">← MyApps</a> &nbsp; <a href="https://firewall.rohan.run.place/">AdGuard</a></div>
+</header>
+<main>
+  <p class="hint">Disable stops the workspace, blocks SSO at the gateway, clears the stored Authelia cookie and quarantines the IP. Files, volumes and mail are retained. Encrypted export and permanent purge are Phase 2.</p>
+  <div id="err"></div>
+  <section class="cards" id="summary"></section>
+
+  <h2>Users</h2>
+  <table>
+    <thead><tr>
+      <th>User</th><th>State</th><th>IP</th><th>Container</th><th>LDAP</th>
+      <th>Adult sites</th><th>Safe search</th><th>Retention</th><th>Actions</th>
+    </tr></thead>
+    <tbody id="users"></tbody>
+  </table>
+
+  <h2>Reconcile</h2>
+  <p class="hint">Artifacts that have no matching LLDAP user. Nothing here is deleted automatically.</p>
+  <div class="lists" id="reconcile"></div>
+
+  <h2>Audit</h2>
+  <table>
+    <thead><tr><th>When</th><th>Actor</th><th>Target</th><th>Action</th><th>Detail</th></tr></thead>
+    <tbody id="audit"></tbody>
+  </table>
+</main>
+<script>
+const API = '/admin/offboarding/api';
+const esc = (value) => String(value === null || value === undefined ? '' : value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const when = (ts) => ts ? new Date(ts * 1000).toLocaleString() : '';
+let DATA = null;
+
+async function api(path, options) {
+  const response = await fetch(API + path, Object.assign({ credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } }, options || {}));
+  const text = await response.text();
+  let data;
+  try { data = JSON.parse(text); } catch (e) { data = { detail: text }; }
+  if (!response.ok) throw new Error(data.detail || ('HTTP ' + response.status));
+  return data;
+}
+
+async function load() {
+  DATA = await api('/state');
+  render();
+}
+
+function render() {
+  const users = DATA.users || [];
+  const reconcile = DATA.reconcile || {};
+  const counts = {
+    total: users.length,
+    active: users.filter((u) => u.state !== 'disabled').length,
+    disabled: users.filter((u) => u.state === 'disabled').length,
+    orphans: Object.values(reconcile.orphans || {}).reduce((n, list) => n + list.length, 0)
+  };
+  document.getElementById('summary').innerHTML = [
+    ['Users', counts.total], ['Active', counts.active], ['Disabled', counts.disabled], ['Orphans', counts.orphans]
+  ].map(([label, value]) => '<div class="card"><span>' + label + '</span><b>' + value + '</b></div>').join('');
+
+  document.getElementById('users').innerHTML = users.map((u) => {
+    const disabled = u.state === 'disabled';
+    const containerClass = u.container === 'running' ? 'running' : (u.container === 'absent' ? 'absent' : '');
+    return '<tr>' +
+      '<td><b>' + esc(u.username) + '</b><div class="muted">' + esc(u.display_name || '') + '</div></td>' +
+      '<td><span class="badge ' + (disabled ? 'disabled' : 'active') + '">' + esc(u.state) + '</span></td>' +
+      '<td><code>' + esc(u.ip || '-') + '</code></td>' +
+      '<td class="' + containerClass + '">' + esc(u.container) + '</td>' +
+      '<td>' + (u.in_lldap ? 'yes' : '<span class="badge disabled">missing</span>') + '</td>' +
+      '<td><input type="checkbox" ' + (u.adult_exempt ? 'checked' : '') + ' onchange="setPolicy(\'' + esc(u.username) + '\', this.checked, ' + (u.safe_search_exempt ? 'true' : 'false') + ')"></td>' +
+      '<td><input type="checkbox" ' + (u.safe_search_exempt ? 'checked' : '') + ' onchange="setPolicy(\'' + esc(u.username) + '\', ' + (u.adult_exempt ? 'true' : 'false') + ', this.checked)"></td>' +
+      '<td><input type="number" min="0" value="' + esc(u.retention_days) + '" onchange="setHold(\'' + esc(u.username) + '\', this.value, ' + (u.legal_hold ? 'true' : 'false') + ')">' +
+      '<div class="muted"><label><input type="checkbox" ' + (u.legal_hold ? 'checked' : '') + ' onchange="setHold(\'' + esc(u.username) + '\', ' + esc(u.retention_days) + ', this.checked)"> legal hold</label></div></td>' +
+      '<td>' + (disabled
+        ? '<button onclick="act(\'' + esc(u.username) + '\', \'enable\')">Enable</button>'
+        : '<button class="danger" onclick="act(\'' + esc(u.username) + '\', \'disable\')">Disable</button>') +
+      ' <button class="ghost" onclick="manifest(\'' + esc(u.username) + '\')">Manifest</button></td>' +
+      '</tr>';
+  }).join('') || '<tr><td colspan="9" class="muted">No sessions recorded.</td></tr>';
+
+  const orphans = reconcile.orphans || {};
+  document.getElementById('reconcile').innerHTML = Object.keys(orphans).map((key) =>
+    '<div class="list"><b>' + esc(key) + ' (' + orphans[key].length + ')</b>' +
+    (orphans[key].length ? orphans[key].map((x) => '<div>' + esc(x) + '</div>').join('') : '<div class="muted">none</div>') +
+    '</div>').join('') +
+    '<div class="list"><b>without session (' + (reconcile.without_session || []).length + ')</b>' +
+    ((reconcile.without_session || []).length ? reconcile.without_session.map((x) => '<div>' + esc(x) + '</div>').join('') : '<div class="muted">none</div>') + '</div>';
+
+  document.getElementById('audit').innerHTML = (DATA.audit || []).slice(0, 40).map((a) =>
+    '<tr><td>' + esc(when(a.ts)) + '</td><td>' + esc(a.actor) + '</td><td>' + esc(a.target) + '</td><td>' + esc(a.action) + '</td><td class="muted">' + esc((a.detail || '').slice(0, 220)) + '</td></tr>'
+  ).join('') || '<tr><td colspan="5" class="muted">No entries yet.</td></tr>';
+}
+
+async function act(user, mode) {
+  const reason = prompt((mode === 'disable' ? 'Disable ' : 'Enable ') + user + ' — reason (recorded in the audit log):', '');
+  if (reason === null) return;
+  if (!confirm(mode.toUpperCase() + ' ' + user + '? This is reversible for disable; data is retained.')) return;
+  try { await api('/user/' + encodeURIComponent(user), { method: 'POST', body: JSON.stringify({ mode: mode, reason: reason }) }); await load(); }
+  catch (e) { document.getElementById('err').textContent = e.message; }
+}
+
+async function setPolicy(user, adult, safe) {
+  try { await api('/user/' + encodeURIComponent(user) + '/policy', { method: 'POST', body: JSON.stringify({ adult_exempt: adult, safe_search_exempt: safe }) }); await load(); }
+  catch (e) { document.getElementById('err').textContent = e.message; }
+}
+
+async function setHold(user, days, legal) {
+  try { await api('/user/' + encodeURIComponent(user) + '/hold', { method: 'POST', body: JSON.stringify({ retention_days: Number(days), legal_hold: legal }) }); await load(); }
+  catch (e) { document.getElementById('err').textContent = e.message; }
+}
+
+async function manifest(user) {
+  try { const data = await api('/manifest/' + encodeURIComponent(user)); alert(JSON.stringify(data.manifest, null, 2)); }
+  catch (e) { document.getElementById('err').textContent = e.message; }
+}
+
+load().catch((e) => { document.getElementById('err').textContent = e.message; });
+</script>
+</body>
+</html>
+"""
+
+
+# --------------------------------------------------------------------------- #
 # seamless sso internal auth handler for nginx
 # --------------------------------------------------------------------------- #
+
 @app.api_route("/internal/authz", methods=["GET", "HEAD", "POST"])
 async def internal_authz(request: Request):
     assert _http is not None
 
-    forwarded_for = request.headers.get("x-forwarded-for") or ""
-    client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "")
+    # nginx sets X-Real-IP to the true peer.  Never trust a client-supplied
+    # X-Forwarded-For here: a session could spoof another user's address.
+    client_ip = (request.headers.get("x-real-ip") or "").strip()
+    if not client_ip:
+        client_ip = request.client.host if request.client else ""
 
     if client_ip.startswith("172.30.0."):
         row = query("SELECT username, groups, display_name, email, authelia_cookie FROM sessions WHERE ip = ?", (client_ip,))
@@ -2480,6 +3284,13 @@ async def internal_authz(request: Request):
             display_name = row[0]["display_name"] or username.title()
             email = row[0]["email"] or f"{username}@rohan.run.place"
             auth_cookie = row[0]["authelia_cookie"] or ""
+
+            if is_disabled(username) or not lldap_user_exists(username):
+                return Response(
+                    status_code=403,
+                    content="Account disabled or removed.",
+                    media_type="text/plain",
+                )
 
             # Check admin-only host protection
             target_host = (request.headers.get("x-forwarded-host") or "").split(":")[0].strip()
@@ -2526,6 +3337,18 @@ async def internal_authz(request: Request):
         code = authelia_resp.status_code
         if code in (301, 302, 303, 307, 308):
             code = 401
+        if code == 200:
+            authelia_user = ""
+            for key, value in resp_headers.items():
+                if key.lower() == "remote-user":
+                    authelia_user = (value or "").strip()
+                    break
+            if authelia_user and (is_disabled(authelia_user) or not lldap_user_exists(authelia_user)):
+                return Response(
+                    status_code=403,
+                    content="Account disabled or removed.",
+                    media_type="text/plain",
+                )
         return Response(
             status_code=code,
             headers=resp_headers,
@@ -2662,18 +3485,22 @@ def cycle_container(container) -> None:
 
 @app.get("/api/workspace")
 async def workspace_status(request: Request):
-    user = sanitize(request.headers.get("remote-user", ""))
+    user, _groups = request_identity(request)
     if not user:
         raise HTTPException(status_code=401, detail="unauthenticated")
+    if is_disabled(user):
+        raise HTTPException(status_code=403, detail="account disabled")
     container = await asyncio.to_thread(workspace_container, user)
     return {"user": user, "state": await asyncio.to_thread(workspace_state, container)}
 
 
 @app.post("/api/workspace/{action}")
 async def workspace_control(action: str, request: Request):
-    user = sanitize(request.headers.get("remote-user", ""))
+    user, _groups = request_identity(request)
     if not user:
         raise HTTPException(status_code=401, detail="unauthenticated")
+    if is_disabled(user):
+        raise HTTPException(status_code=403, detail="account disabled")
     if action not in WORKSPACE_ACTIONS:
         raise HTTPException(status_code=400, detail="unknown action")
 

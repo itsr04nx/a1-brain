@@ -33,6 +33,15 @@
       isAllowed: (u) => u.isAdmin || u.groups.includes('firewall')
     },
     {
+      id: 'offboarding',
+      name: 'User Administration',
+      url: 'https://auth.rohan.run.place/admin/offboarding',
+      subdomain: 'auth.rohan.run.place',
+      category: 'Infrastructure',
+      logo: '/portal/icons/firewall.svg',
+      isAllowed: (u) => u.isAdmin
+    },
+    {
       id: 'status',
       name: 'System Status',
       url: 'https://status.rohan.run.place/',
