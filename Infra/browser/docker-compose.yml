@@ -67,7 +67,8 @@ services:
       SQUID_USERS_DIR: /home/ubuntu/Workspace/browser/squid/users
       SQUID_BLOCKED_DOMAINS: /squid_blocked_domains.txt
       DB_PATH: /data/gateway.db
-      IDLE_MINUTES: "20"
+      IDLE_PAUSE_MINUTES: "20"
+      IDLE_STOP_MINUTES: "1440"
       ALLOWED_GROUPS: "admins,apps-all,ai-dev-core,browser"
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
       ADGUARD_USER: ${ADGUARD_USER:-admin}
@@ -97,6 +98,43 @@ services:
       retries: 5
       start_period: 10s
 
+  netdata:
+    image: netdata/netdata:stable
+    container_name: netdata
+    hostname: rohan-cluster
+    pid: host
+    restart: unless-stopped
+    environment:
+      DOCKER_HOST: tcp://docker-socket-proxy:2375
+      NETDATA_HOST_PREFIX: /host
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor=unconfined
+    mem_limit: 384m
+    cpus: 0.5
+    volumes:
+      - ./netdata/netdata.conf:/etc/netdata/netdata.conf:ro
+      - ./netdata/health_alarm_notify.conf:/etc/netdata/health_alarm_notify.conf:ro
+      - ./netdata/msmtprc:/etc/msmtprc:ro
+      - ./netdata/health_alarm_notify.conf:/etc/netdata/health_alarm_notify.conf:ro
+      - ./netdata/msmtprc:/etc/msmtprc:ro
+      - ./netdata/health_alarm_notify.conf:/etc/netdata/health_alarm_notify.conf:ro
+      - ./netdata/msmtprc:/etc/msmtprc:ro
+      - netdata-lib:/var/lib/netdata
+      - netdata-cache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    networks:
+      browser-net:
+        ipv4_address: 172.30.0.8
+      control-net:
+        ipv4_address: 172.33.0.4
+
 networks:
   control-net:
     external: true
@@ -108,3 +146,7 @@ networks:
     external: true
   egress-net:
     external: true
+
+volumes:
+  netdata-lib:
+  netdata-cache:

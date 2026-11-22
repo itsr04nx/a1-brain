@@ -175,7 +175,7 @@ To offload agent execution, model tool invocation, testing suites, and sandbox r
 - Do **not** set `SELKIES_MANUAL_RESOLUTION=true` (or `SELKIES_MANUAL_WIDTH/HEIGHT`): the server then forces manual mode and ignores every client resize request, which is exactly what produced the old blurry 720p picture. The logs showed `Client tried to change locked setting 'manual_resolution' ... Request ignored` and `Server override: Applying manual resolution 1280x720`.
 - Stream defaults: **30 fps**, CRF **30** with an adjustable 22-34 range (`SELKIES_VIDEO_CRF=30,22-34`), h264, CPU encode threading on. Higher resolutions cost more software-encode CPU; users can lower the resolution or raise CRF if a session stutters.
 - Container env and limits are immutable. `container_is_stale()` detects sessions created with older settings and `recreate_container()` rebuilds them while keeping the `ff-<user>-config` volume and IP. A stopped stale session is recreated on start/connect, and **Restart** always recreates (about 9 s, Firefox profile and tabs survive in the volume).
-- Session limits are **2.5 GiB RAM / 1.5 CPU** (`mem_limit`, `nano_cpus`). At 1.5 GiB the kernel OOM-killed `antigravity-ide`.
+- Session limits are **5 GiB RAM / 1.5 CPU** (`mem_limit`, `nano_cpus`); `container_is_stale()` recreates sessions built with older limits. At 1.5 GiB the kernel previously OOM-killed `antigravity-ide`.
 - Host tuning: 4 GiB additional swap (`/swapfile2`) and `vm.swappiness=10` to absorb spikes without thrashing.
 - Permanent capacity fix: resize the instance to **4 OCPU / 24 GB** (Always Free A1 allowance) and raise per-session limits to ~4 GiB / 2 CPU.
 
@@ -191,11 +191,22 @@ To offload agent execution, model tool invocation, testing suites, and sandbox r
 #### Workspace controls (Pause / Stop / Restart)
 - The MyApps tile on `auth.rohan.run.place` is the **only** place with controls: Pause, Stop and Restart. They are rendered by `authelia/nginx/portal/portal.js` and styled by `portal.css`; the streaming page itself has no controls.
 - Requests go to `https://auth.rohan.run.place/portal/api/workspace[/{action}]`. nginx gates that location with `auth_request /internal/authelia/authz` and forwards it to `browser-gateway` with a `Remote-User` header. The gateway only ever acts on `ff-<Remote-User>`, so a user cannot control another user's workspace.
-- Semantics: **Pause** = `docker pause` (freezes CPU, keeps memory); **Resume** = `docker unpause`; **Stop** = `docker stop -t 15` (frees memory, keeps the `ff-<user>-config` volume and files); **Start** = `docker start` plus health wait; **Restart** = stop + start, giving a fresh labwc/Firefox session.
-- Docker refuses `stop`/`kill` on a paused container, so Stop and Restart unpause first.
+- Semantics: **Pause** = `docker pause` (freezes CPU, keeps memory and the live desktop); **Resume** = `docker unpause` (same container, same tabs); **Stop** = `docker stop -t 15` (frees memory, keeps the `ff-<user>-config` volume and files); **Start** = resume a paused session in place, or `docker start` an exited one, plus health wait; **Restart** = recreate the container, giving a fresh labwc/Firefox session while keeping the volume and IP.
+- Docker refuses `stop`/`kill` on a paused container, so Stop unpauses first; Restart recreates it.
 - Unauthenticated calls return `401 {"detail":"unauthenticated"}` via the `@ws_unauth` location instead of an HTML redirect, so the card can show a clear failure.
-- The idle reaper still stops sessions after `IDLE_MINUTES=20` with no viewer; the card then shows `Stopped` and Start brings the session back.
+- The card reflects Docker state: `Running`, `Paused`, `Stopped` or `Not started`. A paused session shows **Resume** in place of Pause.
 - Bump `portal.js?v=` / `portal.css?v=` in `nginx/default.conf` whenever the portal assets change, or browsers keep the old bundle.
+
+#### Idle standby (automatic pause, then stop)
+- Two stages, both driven by `idle_reap_once()` in `browser/gateway/app.py` every 60 s:
+  - `IDLE_PAUSE_MINUTES=20` (default): `docker pause`. The desktop, Firefox tabs and apps stay in RAM; only CPU is freed. This is the standby state.
+  - `IDLE_STOP_MINUTES=1440` (24 h, default): `docker stop -t 20`. RAM is freed too. `0` disables the stage.
+- `last_seen` is refreshed by every authenticated request and by the viewer probe, so an open/connected Selkies stream keeps a session awake. A session pauses only after the stream is disconnected (tab closed or network gone) and 20 idle minutes pass.
+- Paused sessions **count toward `MAX_SESSIONS`**: they still own their slot and RAM. Resuming a paused session therefore never hits the capacity check; it unpauses in place (or recreates first if the container is stale). Starting a *stopped* session at capacity still returns `429`.
+- Paused containers cannot `exec`, so the viewer probe runs only for `running` containers. Stopping a paused session unpauses it first, then stops it.
+- Manual Pause/Resume/Stop refresh `last_seen`, so a deliberate pause gets a fresh 24 h clock instead of being stopped moments later.
+- The MyApps card shows `Paused` and swaps Pause for **Resume**; opening MyApps also calls `ensure_session()`, which wakes the paused session automatically.
+- Operational note: `ff-sadik` was paused manually before this feature; it will be stopped automatically once its `last_seen` passes 24 h.
 
 #### Desktop resilience (Firefox relaunch)
 - `selkies-desktop` is the foreground session process. If it exits, `startwm_wayland.sh` kills labwc and the whole desktop ends, which looks like a "missing desktop".
