@@ -130,8 +130,10 @@ DEFAULT_SHORT_NAMES = [
 
 EXTRA_HOSTS = {h: NGINX_IP for h in PUBLIC_HOSTS + DEFAULT_SHORT_NAMES}
 EXTRA_HOSTS["browser-gateway"] = GATEWAY_IP
+for _proto_host in ("imap", "smtp", "imap.rohan.run.place", "smtp.rohan.run.place"):
+    EXTRA_HOSTS[_proto_host] = MAIL_IP
 for _mail_host in ("mail", "webmail", "mail.rohan.run.place", "webmail.rohan.run.place"):
-    EXTRA_HOSTS[_mail_host] = MAIL_IP
+    EXTRA_HOSTS[_mail_host] = NGINX_IP
 
 DEFAULT_GOTOS = [
     ("koel", "https://koel.rohan.run.place/", "Koel Music", "Stream company audio & music library", "Entertainment", "music", 1),
@@ -653,10 +655,12 @@ def create_container(user: str, ip: str) -> None:
     except Exception:
         pass
 
-    # Mail protocol names must win over goto keywords: they need IMAP/SMTP,
-    # and nginx only listens on 80/443.
+    # IMAP/SMTP protocols point to docker bridge gateway (docker-mailserver)
+    for _proto_host in ("imap", "smtp", "imap.rohan.run.place", "smtp.rohan.run.place"):
+        all_hosts[_proto_host] = MAIL_IP
+    # Webmail interfaces (HTTP/HTTPS) point to Nginx for SSO
     for _mail_host in ("mail", "webmail", "mail.rohan.run.place", "webmail.rohan.run.place"):
-        all_hosts[_mail_host] = MAIL_IP
+        all_hosts[_mail_host] = NGINX_IP
 
     container = dc().containers.create(
         FF_IMAGE,
@@ -3332,6 +3336,10 @@ async def internal_authz(request: Request):
     # X-Forwarded-For here: a session could spoof another user's address.
     client_ip = (request.headers.get("x-real-ip") or "").strip()
     if not client_ip:
+        xff = (request.headers.get("x-forwarded-for") or "").strip()
+        if xff:
+            client_ip = xff.split(",")[0].strip()
+    if not client_ip:
         client_ip = request.client.host if request.client else ""
 
     if client_ip.startswith("172.30.0."):
@@ -3352,7 +3360,7 @@ async def internal_authz(request: Request):
 
             # Check admin-only host protection
             target_host = (request.headers.get("x-forwarded-host") or "").split(":")[0].strip()
-            if target_host in ("firewall.rohan.run.place", "firewall"):
+            if target_host in ("firewall.rohan.run.place", "firewall", "metrics.rohan.run.place", "metrics"):
                 group_list = [g.strip() for g in groups.split(",")]
                 if "admins" not in group_list:
                     return Response(status_code=403, content="Admins only: access restricted to network administrators.", media_type="text/plain")
