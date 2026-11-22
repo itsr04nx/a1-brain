@@ -62,7 +62,11 @@ LLDAP_DB_PATH = os.getenv("LLDAP_DB_PATH", "/lldap_data/users.db")
 ADMIN_IPS_FILE = os.path.join(SQUID_USERS_DIR, "admin_ips.txt")
 ADULT_EXEMPT_IPS_FILE = os.path.join(SQUID_USERS_DIR, "adult_exempt_ips.txt")
 OFFBOARD_DEFAULT_RETENTION_DAYS = int(os.getenv("OFFBOARD_RETENTION_DAYS", "30"))
-IDLE_MINUTES = int(os.getenv("IDLE_MINUTES", "20"))
+# Idle standby: pause after this many idle minutes, then stop after this
+# many more. 0 disables that stage. A paused session keeps its slot and
+# is resumed transparently by ensure_session().
+IDLE_PAUSE_MINUTES = int(os.getenv("IDLE_PAUSE_MINUTES", os.getenv("IDLE_MINUTES", "20")))
+IDLE_STOP_MINUTES = int(os.getenv("IDLE_STOP_MINUTES", "1440"))
 ALLOWED_GROUPS = {
     g.strip().lower()
     for g in os.getenv("ALLOWED_GROUPS", "admins,apps-all,ai-dev-core,browser,myapps").split(",")
@@ -130,10 +134,10 @@ DEFAULT_SHORT_NAMES = [
 
 EXTRA_HOSTS = {h: NGINX_IP for h in PUBLIC_HOSTS + DEFAULT_SHORT_NAMES}
 EXTRA_HOSTS["browser-gateway"] = GATEWAY_IP
-for _proto_host in ("imap", "smtp", "imap.rohan.run.place", "smtp.rohan.run.place"):
+for _proto_host in ("imap", "smtp", "imap.rohan.run.place", "smtp.rohan.run.place", "mail", "mail.rohan.run.place"):
     EXTRA_HOSTS[_proto_host] = MAIL_IP
-for _mail_host in ("mail", "webmail", "mail.rohan.run.place", "webmail.rohan.run.place"):
-    EXTRA_HOSTS[_mail_host] = NGINX_IP
+for _webmail_host in ("webmail", "webmail.rohan.run.place"):
+    EXTRA_HOSTS[_webmail_host] = NGINX_IP
 
 DEFAULT_GOTOS = [
     ("koel", "https://koel.rohan.run.place/", "Koel Music", "Stream company audio & music library", "Entertainment", "music", 1),
@@ -423,7 +427,13 @@ def running_sessions() -> int:
         containers = dc().containers.list(all=True)
     except Exception:
         return 0
-    return sum(1 for c in containers if c.name.startswith("ff-") and c.status == "running")
+    # A paused session still owns its slot and its RAM reservation, so it
+    # counts toward MAX_SESSIONS exactly like a running one.
+    return sum(
+        1
+        for c in containers
+        if c.name.startswith("ff-") and c.status in ("running", "paused")
+    )
 
 
 def container_ip_on(container, network: str) -> Optional[str]:
@@ -655,11 +665,11 @@ def create_container(user: str, ip: str) -> None:
     except Exception:
         pass
 
-    # IMAP/SMTP protocols point to docker bridge gateway (docker-mailserver)
-    for _proto_host in ("imap", "smtp", "imap.rohan.run.place", "smtp.rohan.run.place"):
+    # IMAP/SMTP/Mail protocols point to docker bridge gateway (docker-mailserver & host-published nginx)
+    for _proto_host in ("imap", "smtp", "imap.rohan.run.place", "smtp.rohan.run.place", "mail", "mail.rohan.run.place"):
         all_hosts[_proto_host] = MAIL_IP
     # Webmail interfaces (HTTP/HTTPS) point to Nginx for SSO
-    for _mail_host in ("mail", "webmail", "mail.rohan.run.place", "webmail.rohan.run.place"):
+    for _mail_host in ("webmail", "webmail.rohan.run.place"):
         all_hosts[_mail_host] = NGINX_IP
 
     container = dc().containers.create(
@@ -812,7 +822,18 @@ async def ensure_session(user: str, groups: str = "admins,apps-all,ai-dev-core,b
 
         if container is not None:
             ip = container_ip_on(container, BROWSER_NET)
-            if container.status != "running":
+            if container.status == "paused":
+                # Already holds a slot and its RAM: never capacity-check it,
+                # just wake it in place so the user keeps their desktop.
+                if container_is_stale(container):
+                    log.info("recreating paused %s to apply current settings", name)
+                    await asyncio.to_thread(recreate_container, user)
+                    container = await asyncio.to_thread(dc().containers.get, name)
+                    ip = container_ip_on(container, BROWSER_NET)
+                else:
+                    log.info("resuming paused session %s", name)
+                    await asyncio.to_thread(container.unpause)
+            elif container.status != "running":
                 if running_sessions() >= MAX_SESSIONS:
                     raise CapacityError("all browser slots are busy")
                 if container_is_stale(container):
@@ -873,28 +894,71 @@ def has_active_viewer(container) -> bool:
     return False
 
 
+def idle_reap_once(now: Optional[int] = None) -> None:
+    """One idle-standby pass: pause idle sessions, then stop them later.
+
+    Stage 1 (IDLE_PAUSE_MINUTES): docker pause - frees CPU, keeps RAM/state.
+    Stage 2 (IDLE_STOP_MINUTES, 0 = never): docker stop - frees RAM too.
+    A connected viewer, or any authenticated request, refreshes last_seen and
+    keeps the session awake. Paused containers cannot exec, so the viewer
+    probe is only run for running ones; a paused session is stopped directly.
+    """
+    now = int(time.time()) if now is None else now
+    pause_after = IDLE_PAUSE_MINUTES * 60
+    stop_after = IDLE_STOP_MINUTES * 60
+    rows = query("SELECT username, container, last_seen FROM sessions")
+    for row in rows:
+        user = row["username"]
+        name = row["container"] or f"ff-{user}"
+        idle = now - (row["last_seen"] or now)
+        try:
+            container = dc().containers.get(name)
+        except NotFound:
+            execute("DELETE FROM sessions WHERE username = ?", (user,))
+            continue
+        except Exception as exc:
+            log.warning("idle reap: cannot inspect %s: %s", name, exc)
+            continue
+        try:
+            container.reload()
+            status = container.status
+        except Exception as exc:
+            log.warning("idle reap: cannot reload %s: %s", name, exc)
+            continue
+        if status not in ("running", "paused"):
+            continue
+        if status == "running":
+            try:
+                if has_active_viewer(container):
+                    execute(
+                        "UPDATE sessions SET last_seen = ? WHERE username = ?",
+                        (now, user),
+                    )
+                    continue
+            except Exception as exc:
+                log.warning("idle reap: viewer probe failed for %s: %s", name, exc)
+        if stop_after and idle >= stop_after:
+            log.info("stopping idle session %s (idle %ss)", name, idle)
+            try:
+                if status == "paused":
+                    container.unpause()
+                container.stop(timeout=20)
+            except Exception as exc:
+                log.warning("idle stop failed for %s: %s", name, exc)
+            continue
+        if status == "running" and pause_after and idle >= pause_after:
+            log.info("pausing idle session %s (idle %ss)", name, idle)
+            try:
+                container.pause()
+            except Exception as exc:
+                log.warning("idle pause failed for %s: %s", name, exc)
+
+
 async def reaper() -> None:
     while True:
         try:
             await asyncio.sleep(60)
-            cutoff = int(time.time()) - IDLE_MINUTES * 60
-            rows = query("SELECT username, container FROM sessions WHERE last_seen < ?", (cutoff,))
-            for row in rows:
-                try:
-                    container = dc().containers.get(row["container"])
-                    if container.status == "running":
-                        if has_active_viewer(container):
-                            execute(
-                                "UPDATE sessions SET last_seen = ? WHERE username = ?",
-                                (int(time.time()), row["username"]),
-                            )
-                            continue
-                        log.info("stopping idle session %s", row["container"])
-                        container.stop(timeout=20)
-                except NotFound:
-                    execute("DELETE FROM sessions WHERE username = ?", (row["username"],))
-                except Exception as exc:
-                    log.warning("idle stop failed for %s: %s", row["container"], exc)
+            await asyncio.to_thread(idle_reap_once)
         except asyncio.CancelledError:
             return
         except Exception as exc:
@@ -3530,25 +3594,6 @@ def workspace_state(container) -> str:
     return container.status
 
 
-def cycle_container(container) -> None:
-    """Hard stop + start: gives a brand new desktop, Firefox and app stack."""
-    try:
-        # Unpause first: docker refuses stop/kill on a paused container.
-        container.reload()
-        if container.status == "paused":
-            container.unpause()
-    except Exception:
-        pass
-    try:
-        container.stop(timeout=15)
-    except Exception:
-        try:
-            container.kill()
-        except Exception:
-            pass
-    container.start()
-
-
 @app.get("/api/workspace")
 async def workspace_status(request: Request):
     user, _groups = request_identity(request)
@@ -3573,13 +3618,13 @@ async def workspace_control(action: str, request: Request):
     container = await asyncio.to_thread(workspace_container, user)
 
     if action in ("start", "restart"):
-        if container is not None:
+        # Only an explicit restart rebuilds the container. "start" must wake a
+        # paused session in place (ensure_session unpauses it) so the user
+        # keeps their desktop, tabs and running apps.
+        if action == "restart" and container is not None:
             try:
-                if action == "restart" or container_is_stale(container):
-                    async with lock_for(user):
-                        await asyncio.to_thread(recreate_container, user)
-                elif container.status != "running":
-                    await asyncio.to_thread(cycle_container, container)
+                async with lock_for(user):
+                    await asyncio.to_thread(recreate_container, user)
             except Exception as exc:
                 raise HTTPException(status_code=503, detail=f"restart failed: {exc}")
         try:
@@ -3607,6 +3652,12 @@ async def workspace_control(action: str, request: Request):
     except Exception as exc:
         raise HTTPException(status_code=503, detail=str(exc))
 
+    # Pause/resume/stop are activity: restart the idle clock so a manual pause
+    # is not stopped moments later by a stale last_seen.
+    execute(
+        "UPDATE sessions SET last_seen = ? WHERE username = ?",
+        (int(time.time()), user),
+    )
     return {"user": user, "state": await asyncio.to_thread(workspace_state, container)}
 
 
